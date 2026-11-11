@@ -122,6 +122,18 @@ NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=demo
 PAYMENT_PROVIDER=cod
 WHATSAPP_CONTACT_NUMBER=+94763473075
 ```
+###
+MONGODB_URI=mongodb+srv://denethc545_db_user:x3XDnuVEPkIoiYoY@cluster0.uwhf9lf.mongodb.net/meal-ordering?appName=Cluster0
+AUTH_SECRET=tbh_super_secret_jwt_key_987654321_secure_dev
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+CLOUDINARY_CLOUD_NAME=dxdpsz2b6
+CLOUDINARY_API_KEY=792512629886883
+CLOUDINARY_API_SECRET=9U-jzhkDGbQheMY9B9GgQHa4sYQ
+CLOUDINARY_UPLOAD_FOLDER=tbh_store
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dxdpsz2b6
+PAYMENT_PROVIDER=cod
+WHATSAPP_CONTACT_NUMBER=+94763473075
+
 
 > **Note**: If `MONGODB_URI` is left blank, the application automatically uses the unified in-memory data store seeded with the full catalog (Waves poncho, Ansel shoes, Parakeet bags, banners, etc.). When a MongoDB Atlas URI is provided, it connects via Mongoose and persists all data directly to your MongoDB cluster.
 
