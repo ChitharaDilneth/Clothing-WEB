@@ -9,14 +9,15 @@ interface UserProfile {
   email: string;
   name: string;
   role: UserRole;
+  username?: string;
 }
 
 interface AuthContextType {
   user: UserProfile | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (usernameOrEmail: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string, phone?: string) => Promise<boolean>;
-  logout: () => Promise<void>;
+  logout: (redirectToOrEvent?: string | React.MouseEvent) => Promise<void>;
   isAdmin: boolean;
 }
 
@@ -26,31 +27,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadUser() {
-      try {
-        const res = await fetch("/api/auth/me");
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user);
-        } else {
-          setUser(null);
-        }
-      } catch {
+  const loadUser = async () => {
+    try {
+      const res = await fetch("/api/auth/me", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+      } else {
         setUser(null);
-      } finally {
-        setIsLoading(false);
       }
+    } catch {
+      setUser(null);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadUser();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (usernameOrEmail: string, password: string): Promise<boolean> => {
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          username: usernameOrEmail,
+          email: usernameOrEmail,
+          password,
+        }),
       });
       const data = await res.json();
       if (res.ok && data.user) {
@@ -58,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         toast.success(`Welcome back, ${data.user.name}!`);
         return true;
       } else {
-        toast.error(data.message || "Invalid email or password");
+        toast.error(data.message || "Invalid username/email or password");
         return false;
       }
     } catch {
@@ -67,7 +73,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const register = async (name: string, email: string, password: string, phone?: string): Promise<boolean> => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    phone?: string
+  ): Promise<boolean> => {
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
@@ -89,23 +100,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = async () => {
+  const logout = async (redirectToOrEvent?: string | React.MouseEvent) => {
+    const redirectTo = typeof redirectToOrEvent === "string" ? redirectToOrEvent : undefined;
     try {
       await fetch("/api/auth/logout", { method: "POST" });
+    } catch (e) {
+      console.error("Logout request failed:", e);
+    } finally {
       setUser(null);
       toast.info("Logged out successfully");
-      window.location.href = "/";
-    } catch {
-      setUser(null);
+      if (redirectTo) {
+        window.location.href = redirectTo;
+      } else if (typeof window !== "undefined" && window.location.pathname.startsWith("/admin")) {
+        window.location.href = "/admin/login";
+      } else {
+        window.location.href = "/";
+      }
     }
   };
 
   const isAdmin = Boolean(
-    user && (user.role === "superadmin" || user.role === "admin" || user.role === "product_manager")
+    user && (user.role === "superadmin" || user.role === "admin" || user.role === "product_manager" || user.role === "order_manager")
   );
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, isAdmin }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        login,
+        register,
+        logout,
+        isAdmin,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -113,6 +141,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within AuthProvider");
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
   return context;
 }

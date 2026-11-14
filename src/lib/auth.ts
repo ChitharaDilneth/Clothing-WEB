@@ -6,11 +6,16 @@ import { IUser, UserRole } from "@/types";
 const AUTH_SECRET = process.env.AUTH_SECRET || "tbh_super_secret_jwt_key_987654321_secure_dev";
 const COOKIE_NAME = "tbh_auth_token";
 
+export const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
+export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@thebrandhub.lk";
+export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123456";
+
 export interface TokenPayload {
   userId: string;
   email: string;
   name: string;
   role: UserRole;
+  username?: string;
 }
 
 export function hashPassword(password: string): string {
@@ -45,24 +50,15 @@ export async function getCurrentUser(): Promise<TokenPayload | null> {
     // cookies() unavailable in non-request contexts
   }
 
-  // In local development or testing environments, gracefully provide default superadmin session
-  if (process.env.NODE_ENV !== "production") {
-    return {
-      userId: DEFAULT_ADMIN._id!,
-      email: DEFAULT_ADMIN.email,
-      name: DEFAULT_ADMIN.name,
-      role: DEFAULT_ADMIN.role,
-    };
-  }
-
   return null;
 }
 
-export const DEFAULT_ADMIN: IUser = {
+export const DEFAULT_ADMIN: IUser & { username: string } = {
   _id: "usr_admin_1",
   name: "TBH Executive Admin",
-  email: "admin@thebrandhub.lk",
-  passwordHash: hashPassword("admin123456"),
+  email: ADMIN_EMAIL,
+  username: ADMIN_USERNAME,
+  passwordHash: hashPassword(ADMIN_PASSWORD),
   role: "superadmin",
   phone: "+94763473075",
 };

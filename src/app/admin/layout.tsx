@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Package,
@@ -12,11 +12,12 @@ import {
   Sparkles,
   Tag,
   Settings,
-  ArrowLeft,
   Menu,
   X,
   LogOut,
   ExternalLink,
+  ShieldCheck,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import SiteLogo from "@/components/SiteLogo";
@@ -34,8 +35,52 @@ const ADMIN_NAV = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const router = useRouter();
+  const { user, isAdmin, isLoading, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // All React hooks MUST be called unconditionally at the top before any conditional returns
+  useEffect(() => {
+    if (!isLoading && !isAdmin && pathname !== "/admin/login") {
+      router.replace("/admin/login");
+    }
+  }, [isLoading, isAdmin, pathname, router]);
+
+  // If viewing the admin login page, don't show the admin layout wrapper
+  if (pathname === "/admin/login") {
+    return <>{children}</>;
+  }
+
+  // Loading state while verifying admin authentication session
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0d0d0d] text-white flex flex-col items-center justify-center p-4">
+        <Loader2 className="w-8 h-8 text-white animate-spin mb-3" />
+        <p className="text-xs uppercase tracking-widest font-bold text-neutral-400">
+          Verifying Admin Credentials...
+        </p>
+      </div>
+    );
+  }
+
+  // Not authorized fallback screen while redirect happens
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-[#0d0d0d] text-white flex flex-col items-center justify-center p-4">
+        <ShieldCheck className="w-10 h-10 text-amber-400 mb-3" />
+        <h2 className="text-base font-black uppercase tracking-wider">Access Restricted</h2>
+        <p className="text-xs text-neutral-400 mt-1 mb-4">
+          Please log in with administrator privileges to access this console.
+        </p>
+        <Link
+          href="/admin/login"
+          className="bg-white text-black px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider hover:bg-neutral-200 transition-colors"
+        >
+          Go to Admin Sign In
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-neutral-100 flex flex-col md:flex-row antialiased">
@@ -44,7 +89,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <SiteLogo variant="light" />
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-1.5 rounded-lg bg-neutral-900 text-white"
+          className="p-1.5 rounded-lg bg-neutral-900 text-white cursor-pointer"
+          aria-label="Toggle navigation menu"
         >
           {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
@@ -102,8 +148,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
 
           <button
-            onClick={logout}
-            className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-neutral-900 rounded-xl transition-colors"
+            onClick={() => logout("/admin/login")}
+            className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-neutral-900 rounded-xl transition-colors cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Sign Out</span>
@@ -123,11 +169,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           <div className="flex items-center gap-4 text-xs">
             <span className="text-neutral-400 hidden sm:inline">
-              Logged in as: <strong className="text-white">{user?.name || "Admin"}</strong>
+              Logged in as: <strong className="text-white">{user?.name || user?.username || "Admin"}</strong>
             </span>
             <span className="bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase">
               {user?.role || "SUPERADMIN"}
             </span>
+
+            <button
+              onClick={() => logout("/admin/login")}
+              className="text-neutral-400 hover:text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1 border border-neutral-800 hover:border-neutral-700 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+              title="Sign Out of Admin"
+            >
+              <LogOut className="w-3 h-3 text-red-400" />
+              <span>Sign Out</span>
+            </button>
           </div>
         </header>
 
