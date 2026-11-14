@@ -31,12 +31,12 @@ import SiteLogo from "@/components/SiteLogo";
 // Master Superadmin Navigation
 const ADMIN_NAV = [
   { name: "Overview", href: "/admin", icon: LayoutDashboard },
-  { name: "Products", href: "/admin/products", icon: Package },
-  { name: "Brands", href: "/admin/brands", icon: Store },
-  { name: "Categories", href: "/admin/categories", icon: Layers },
   { name: "Orders", href: "/admin/orders", icon: ShoppingBag },
-  { name: "Inventory", href: "/admin/inventory", icon: Sliders },
   { name: "Custom Orders", href: "/admin/custom-orders", icon: Sparkles },
+  { name: "Products", href: "/admin/products", icon: Package },
+  { name: "Categories", href: "/admin/categories", icon: Layers },
+  { name: "Brands", href: "/admin/brands", icon: Store },
+  { name: "Inventory", href: "/admin/inventory", icon: Sliders },
   { name: "Coupons", href: "/admin/coupons", icon: Tag },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
