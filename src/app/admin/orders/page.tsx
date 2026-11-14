@@ -430,8 +430,8 @@ export default function AdminOrdersPage() {
           <div>
             <div className="flex items-center gap-2.5">
               <Calendar className="w-6 h-6 text-neutral-900 shrink-0" />
-              <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-neutral-900">
-                Order Management ({orders.length})
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-900">
+                Order Management
               </h1>
             </div>
             <p className="text-xs text-neutral-500 mt-1 font-medium">
