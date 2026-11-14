@@ -135,7 +135,7 @@ const memoryOrders: IOrder[] = [
   },
 ];
 
-const memoryCoupons: ICoupon[] = [
+let memoryCoupons: ICoupon[] = [
   {
     _id: "coup_1",
     code: "TBH15",
@@ -796,6 +796,58 @@ export async function createCoupon(data: Partial<ICoupon>): Promise<ICoupon> {
   }
   memoryCoupons.push(newCoupon);
   return newCoupon;
+}
+
+export async function updateCoupon(idOrCode: string, data: Partial<ICoupon>): Promise<ICoupon | null> {
+  const db = await connectDB();
+  if (db) {
+    try {
+      let updated;
+      if (mongoose.Types.ObjectId.isValid(idOrCode)) {
+        updated = await CouponModel.findByIdAndUpdate(idOrCode, data, { new: true });
+      } else {
+        updated = await CouponModel.findOneAndUpdate(
+          { $or: [{ _id: idOrCode }, { code: idOrCode.toUpperCase() }] },
+          data,
+          { new: true }
+        );
+      }
+      if (updated) return { ...updated.toObject(), _id: String(updated._id) } as unknown as ICoupon;
+    } catch (e) {
+      console.error("Error updating coupon in MongoDB:", e);
+    }
+  }
+  const idx = memoryCoupons.findIndex(
+    (c) => c._id === idOrCode || c.code.toUpperCase() === idOrCode.toUpperCase()
+  );
+  if (idx !== -1) {
+    memoryCoupons[idx] = { ...memoryCoupons[idx], ...data };
+    return memoryCoupons[idx];
+  }
+  return null;
+}
+
+export async function deleteCoupon(idOrCode: string): Promise<boolean> {
+  const db = await connectDB();
+  if (db) {
+    try {
+      if (mongoose.Types.ObjectId.isValid(idOrCode)) {
+        await CouponModel.findByIdAndDelete(idOrCode);
+      } else {
+        await CouponModel.findOneAndDelete({
+          $or: [{ _id: idOrCode }, { code: idOrCode.toUpperCase() }],
+        });
+      }
+      return true;
+    } catch (e) {
+      console.error("Error deleting coupon in MongoDB:", e);
+    }
+  }
+  const initLen = memoryCoupons.length;
+  memoryCoupons = memoryCoupons.filter(
+    (c) => c._id !== idOrCode && c.code.toUpperCase() !== idOrCode.toUpperCase()
+  );
+  return memoryCoupons.length < initLen;
 }
 
 export async function getBanners(): Promise<IBanner[]> {
