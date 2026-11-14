@@ -23,9 +23,12 @@ import {
   Eye,
   Star,
   Package,
+  Tag,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { IProduct, ICategory, IBrand, IProductImage, IProductColor } from "@/types";
 import { useAuth } from "@/context/AuthContext";
@@ -41,6 +44,39 @@ const PRESET_COLORS = [
   { name: "Beige", hex: "#d4b895" },
   { name: "Burgundy", hex: "#831843" },
 ];
+
+const getCategoryIcon = (catName: string) => {
+  const lower = catName.toLowerCase();
+  if (lower.includes("women")) return "♀";
+  if (lower.includes("men") && !lower.includes("women")) return "♂";
+  if (lower.includes("kid")) return "👶";
+  if (lower.includes("unisex")) return "👕";
+  if (lower.includes("health")) return "💚";
+  if (lower.includes("clothing") || lower.includes("apparel")) return "👔";
+  if (lower.includes("bag")) return "👜";
+  if (lower.includes("shoe") || lower.includes("footwear")) return "👟";
+  return "🏷️";
+};
+
+const getCategoryBadgeStyle = (catName: string) => {
+  const lower = catName.toLowerCase();
+  if (lower.includes("health")) {
+    return { bg: "bg-emerald-50 text-emerald-700 border-emerald-100", icon: "💚" };
+  }
+  if (lower.includes("men") && !lower.includes("women")) {
+    return { bg: "bg-sky-50 text-sky-700 border-sky-100", icon: "💙" };
+  }
+  if (lower.includes("bag")) {
+    return { bg: "bg-purple-50 text-purple-700 border-purple-100", icon: "💜" };
+  }
+  if (lower.includes("women")) {
+    return { bg: "bg-rose-50 text-rose-700 border-rose-100", icon: "💖" };
+  }
+  if (lower.includes("kid")) {
+    return { bg: "bg-amber-50 text-amber-700 border-amber-100", icon: "💛" };
+  }
+  return { bg: "bg-neutral-100 text-neutral-700 border-neutral-200", icon: "🏷️" };
+};
 
 export default function AdminProductsPage() {
   const { user } = useAuth();
@@ -59,6 +95,9 @@ export default function AdminProductsPage() {
   const [stockFilter, setStockFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("newest");
   const [viewMode, setViewMode] = useState<"table" | "grouped" | "grid">("table");
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 5;
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -141,7 +180,9 @@ export default function AdminProductsPage() {
 
   // Distinct category list from categories API + any found in products
   const categoryTabs = useMemo(() => {
+    const defaultOrder = ["Women", "Men", "Kids", "Unisex", "Health", "Clothing", "Bags"];
     const set = new Set<string>();
+    defaultOrder.forEach((c) => set.add(c));
     categories.forEach((c) => set.add(c.name));
     products.forEach((p) => {
       if (p.category) set.add(p.category);
@@ -202,6 +243,34 @@ export default function AdminProductsPage() {
     });
     return groups;
   }, [filteredProducts]);
+
+  // Pagination logic
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredProducts.slice(start, start + pageSize);
+  }, [filteredProducts, currentPage, pageSize]);
+
+  // Bulk selection logic
+  const isAllSelected =
+    paginatedProducts.length > 0 &&
+    paginatedProducts.every((p) => selectedProductIds.includes(p._id || p.sku));
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      const pageIds = paginatedProducts.map((p) => p._id || p.sku);
+      setSelectedProductIds((prev) => prev.filter((id) => !pageIds.includes(id)));
+    } else {
+      const pageIds = paginatedProducts.map((p) => p._id || p.sku);
+      setSelectedProductIds((prev) => Array.from(new Set([...prev, ...pageIds])));
+    }
+  };
+
+  const toggleSelectProduct = (id: string) => {
+    setSelectedProductIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
 
   // Open Create Modal
   const openCreateModal = (prefillCategory?: string) => {
@@ -549,195 +618,279 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-neutral-300 shadow-[0_2px_12px_rgba(0,0,0,0.04)] p-6 rounded-3xl">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-black uppercase tracking-wider text-neutral-900">
+      {/* Main Container Card matching Image 1 */}
+      <div className="bg-white border border-neutral-200/90 rounded-[28px] sm:rounded-[36px] p-6 sm:p-8 shadow-xs space-y-6">
+        {/* 1. Top Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-900">
               {isBrandManager && brandSlug ? `${brandSlug.toUpperCase()} Products` : "Product Management"}
             </h1>
-            <span className="bg-neutral-100 text-neutral-800 text-xs font-bold px-2.5 py-1 rounded-full border border-neutral-300">
-              {filteredProducts.length} Items Total
-            </span>
+            <p className="text-xs text-neutral-500 mt-1 font-medium">
+              Easily add, edit descriptions, manage categories, and organize catalog stock.
+            </p>
           </div>
-          <p className="text-xs text-neutral-500 mt-1 font-medium">
-            {isBrandManager
-              ? `Manage and publish collection items specifically for the ${brandSlug.toUpperCase()} brand store.`
-              : "Easily add, edit descriptions, upload Cloudinary images, manage categories, and organize catalog stock."}
-          </p>
-        </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          {!isBrandManager && (
-            <Link
-              href="/admin/categories"
-              className="bg-white hover:bg-neutral-100 text-neutral-900 border border-neutral-300 px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+          <div className="flex items-center gap-3 flex-wrap">
+            {!isBrandManager && (
+              <Link
+                href="/admin/categories"
+                className="bg-white hover:bg-neutral-50 text-neutral-800 border border-neutral-200/90 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 shadow-2xs transition-colors cursor-pointer"
+              >
+                <Layers className="w-4 h-4 text-neutral-600" />
+                <span>Manage Categories</span>
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={() => openCreateModal()}
+              className="bg-black hover:bg-neutral-800 text-white px-5 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
             >
-              <Layers className="w-4 h-4" />
-              <span>Manage Categories</span>
-            </Link>
-          )}
-          <button
-            onClick={() => openCreateModal()}
-            className="bg-black hover:bg-neutral-800 text-white border border-black px-5 py-2.5 rounded-2xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add New Product</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Category Pills Navigation (User Request: View products category by category) */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-black uppercase tracking-wider text-neutral-500 flex items-center gap-1.5">
-            <FolderTree className="w-3.5 h-3.5 text-neutral-900" />
-            <span>Filter by Category:</span>
-          </span>
-          <span className="text-[11px] text-neutral-500">
-            Showing {filteredProducts.length} of {products.length} items
-          </span>
+              <Plus className="w-4 h-4" />
+              <span>Add New Product</span>
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
+        {/* 2. KPI / Stat Summary Cards (4 Bento Cards from Image 1) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1: Total Products */}
+          <div className="bg-gradient-to-r from-blue-50/50 via-white to-white border border-neutral-200/90 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-2xs hover:shadow-xs transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100/80 flex items-center justify-center text-blue-600 shrink-0">
+                <Package className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[11px] font-semibold text-neutral-500 block">Total Products</span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-2xl font-black text-neutral-900 leading-none">
+                    {products.length}
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full">
+                    ↑ +12%
+                  </span>
+                </div>
+              </div>
+            </div>
+            <img
+              src="https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=200&q=80"
+              alt="Total Products"
+              className="w-16 h-12 object-cover rounded-xl shadow-2xs shrink-0"
+            />
+          </div>
+
+          {/* Card 2: Categories */}
+          <div className="bg-gradient-to-r from-indigo-50/50 via-white to-white border border-neutral-200/90 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-2xs hover:shadow-xs transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100/80 flex items-center justify-center text-indigo-600 shrink-0">
+                <Tag className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[11px] font-semibold text-neutral-500 block">Categories</span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-2xl font-black text-neutral-900 leading-none">
+                    {categoryTabs.length}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <img
+              src="https://images.unsplash.com/photo-1523381294911-8d3cead13475?auto=format&fit=crop&w=200&q=80"
+              alt="Categories"
+              className="w-16 h-12 object-cover rounded-xl shadow-2xs shrink-0"
+            />
+          </div>
+
+          {/* Card 3: Low Stock */}
+          <div className="bg-gradient-to-r from-rose-50/50 via-white to-white border border-neutral-200/90 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-2xs hover:shadow-xs transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100/80 flex items-center justify-center text-rose-500 shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[11px] font-semibold text-neutral-500 block">Low Stock</span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-2xl font-black text-neutral-900 leading-none">
+                    {products.filter((p) => p.stock <= 5).length}
+                  </span>
+                  <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-1.5 py-0.5 rounded-full">
+                    ↓ -25%
+                  </span>
+                </div>
+              </div>
+            </div>
+            <img
+              src="https://images.unsplash.com/photo-1608256246200-53e635b5b65f?auto=format&fit=crop&w=200&q=80"
+              alt="Low Stock"
+              className="w-16 h-12 object-cover rounded-xl shadow-2xs shrink-0"
+            />
+          </div>
+
+          {/* Card 4: Published */}
+          <div className="bg-gradient-to-r from-emerald-50/50 via-white to-white border border-neutral-200/90 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-2xs hover:shadow-xs transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100/80 flex items-center justify-center text-emerald-600 shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[11px] font-semibold text-neutral-500 block">Published</span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-2xl font-black text-neutral-900 leading-none">
+                    {products.filter((p) => p.isActive !== false).length}
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full">
+                    {products.length > 0 ? `${Math.round((products.filter((p) => p.isActive !== false).length / products.length) * 100)}%` : "100%"}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <img
+              src="https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?auto=format&fit=crop&w=200&q=80"
+              alt="Published"
+              className="w-16 h-12 object-cover rounded-xl shadow-2xs shrink-0"
+            />
+          </div>
+        </div>
+
+        {/* 3. Filter by Category Pills (Exact styling from Image 1) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <span className="text-xs font-bold text-neutral-900 shrink-0 mr-1">Filter by Category:</span>
           <button
-            onClick={() => setSelectedCategory("all")}
-            className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
+            type="button"
+            onClick={() => {
+              setSelectedCategory("all");
+              setCurrentPage(1);
+            }}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
               selectedCategory === "all"
                 ? "bg-black text-white shadow-xs"
-                : "bg-white text-neutral-600 hover:text-black hover:bg-neutral-100 border border-neutral-200"
+                : "bg-white text-neutral-700 hover:bg-neutral-50 border border-neutral-200/90"
             }`}
           >
             <span>All Categories</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                selectedCategory === "all" ? "bg-white/20 text-white" : "bg-neutral-100 text-neutral-600"
-              }`}
-            >
-              {products.length}
-            </span>
+            <span className="text-[11px] font-mono opacity-80">({products.length})</span>
           </button>
 
           {categoryTabs.map((cat) => {
             const count = categoryCounts[cat.toLowerCase()] || 0;
             const isSelected = selectedCategory.toLowerCase() === cat.toLowerCase();
+            const icon = getCategoryIcon(cat);
             return (
               <button
                 key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
+                type="button"
+                onClick={() => {
+                  setSelectedCategory(cat);
+                  setCurrentPage(1);
+                }}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                   isSelected
                     ? "bg-black text-white shadow-xs"
-                    : "bg-white text-neutral-600 hover:text-black hover:bg-neutral-100 border border-neutral-200"
+                    : "bg-white text-neutral-700 hover:bg-neutral-50 border border-neutral-200/90"
                 }`}
               >
-                <span>{cat}</span>
-                <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                    isSelected ? "bg-white/20 text-white" : "bg-neutral-100 text-neutral-600"
-                  }`}
-                >
-                  {count}
-                </span>
+                <span>{icon} {cat}</span>
+                <span className="text-[11px] font-mono opacity-80">({count})</span>
               </button>
             );
           })}
         </div>
-      </div>
 
-      {/* Control Bar: Search, Stock Filter, Sort, View Modes */}
-      <div className="bg-white border border-neutral-200/80 rounded-3xl p-3 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs shadow-xs">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search products by title, SKU, brand, or tag..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl pl-10 pr-4 py-2 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-hidden focus:border-black font-medium"
-          />
-        </div>
+        {/* 4. Toolbar: Search Bar, Dropdowns & View Toggle */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
+          {/* Search Input */}
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-neutral-400 absolute left-4 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search products by title, SKU, brand, or tag..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full bg-white border border-neutral-200 rounded-full pl-11 pr-4 py-2 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-hidden focus:border-black font-medium shadow-2xs"
+            />
+          </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Brand Filter */}
-          {isBrandManager && brandSlug ? (
-            <div className="bg-amber-50 border border-amber-300 px-3 py-2 rounded-2xl text-xs text-amber-800 font-bold uppercase flex items-center gap-1.5 shadow-xs">
-              <span>🏬 {brandSlug.toUpperCase()}</span>
-            </div>
-          ) : (
+          {/* Filters & Actions */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Brand Filter */}
+            {isBrandManager && brandSlug ? (
+              <div className="bg-amber-50 border border-amber-300 px-3 py-1.5 rounded-full text-xs text-amber-800 font-bold uppercase flex items-center gap-1.5 shadow-2xs">
+                <span>🏬 {brandSlug.toUpperCase()}</span>
+              </div>
+            ) : (
+              <select
+                value={selectedBrand}
+                onChange={(e) => {
+                  setSelectedBrand(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-white border border-neutral-200 rounded-full px-3.5 py-2 text-xs text-neutral-800 focus:outline-hidden focus:border-black cursor-pointer font-medium shadow-2xs"
+              >
+                <option value="all">Brand: All Stores</option>
+                {brands.map((b) => (
+                  <option key={b.slug} value={b.name}>
+                    Brand: {b.name}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* Stock Filter */}
             <select
-              value={selectedBrand}
-              onChange={(e) => setSelectedBrand(e.target.value)}
-              className="bg-white border border-neutral-300 rounded-2xl px-3 py-2 text-xs text-neutral-800 focus:outline-hidden focus:border-black cursor-pointer font-medium shadow-xs"
+              value={stockFilter}
+              onChange={(e) => {
+                setStockFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-white border border-neutral-200 rounded-full px-3.5 py-2 text-xs text-neutral-800 focus:outline-hidden focus:border-black cursor-pointer font-medium shadow-2xs"
             >
-              <option value="all">Brand: All Stores</option>
-              {brands.map((b) => (
-                <option key={b.slug} value={b.name}>
-                  Brand: {b.name}
-                </option>
-              ))}
+              <option value="all">Stock: All</option>
+              <option value="in_stock">In Stock (&gt; 5)</option>
+              <option value="low_stock">Low Stock (1-5)</option>
+              <option value="out_of_stock">Out of Stock (0)</option>
             </select>
-          )}
 
-          {/* Stock Filter */}
-          <select
-            value={stockFilter}
-            onChange={(e) => setStockFilter(e.target.value)}
-            className="bg-neutral-50 border border-neutral-200 rounded-2xl px-3 py-2 text-xs text-neutral-800 focus:outline-hidden focus:border-black cursor-pointer font-medium"
-          >
-            <option value="all">Stock: All</option>
-            <option value="in_stock">In Stock (&gt; 5)</option>
-            <option value="low_stock">Low Stock (1-5)</option>
-            <option value="out_of_stock">Out of Stock (0)</option>
-          </select>
+            {/* Sort Filter */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-white border border-neutral-200 rounded-full px-3.5 py-2 text-xs text-neutral-800 focus:outline-hidden focus:border-black cursor-pointer font-medium shadow-2xs"
+            >
+              <option value="newest">Sort: Newest</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+              <option value="stock_asc">Stock: Low to High</option>
+              <option value="name_asc">Name: A to Z</option>
+            </select>
 
-          {/* Sort */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="bg-neutral-50 border border-neutral-200 rounded-2xl px-3 py-2 text-xs text-neutral-800 focus:outline-hidden focus:border-black cursor-pointer font-medium"
-          >
-            <option value="newest">Sort: Newest</option>
-            <option value="price_asc">Price: Low to High</option>
-            <option value="price_desc">Price: High to Low</option>
-            <option value="stock_asc">Stock: Low to High</option>
-            <option value="name_asc">Name: A to Z</option>
-          </select>
-
-          {/* View Mode Toggle */}
-          <div className="flex items-center bg-neutral-100 border border-neutral-200 rounded-2xl p-0.5">
-            <button
-              onClick={() => setViewMode("table")}
-              title="Table View"
-              className={`p-1.5 rounded-xl transition-colors ${
-                viewMode === "table" ? "bg-black text-white" : "text-neutral-500 hover:text-black"
-              }`}
-            >
-              <List className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode("grouped")}
-              title="Grouped by Category View"
-              className={`p-1.5 rounded-xl transition-colors ${
-                viewMode === "grouped" ? "bg-black text-white" : "text-neutral-500 hover:text-black"
-              }`}
-            >
-              <FolderTree className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode("grid")}
-              title="Grid Card View"
-              className={`p-1.5 rounded-xl transition-colors ${
-                viewMode === "grid" ? "bg-black text-white" : "text-neutral-500 hover:text-black"
-              }`}
-            >
-              <Grid className="w-4 h-4" />
-            </button>
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-white border border-neutral-200 rounded-full p-1 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setViewMode("table")}
+                title="Table View"
+                className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+                  viewMode === "table" ? "bg-black text-white" : "text-neutral-400 hover:text-black"
+                }`}
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                title="Grid View"
+                className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+                  viewMode === "grid" ? "bg-black text-white" : "text-neutral-400 hover:text-black"
+                }`}
+              >
+                <Grid className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
       {/* Main Content Area based on View Mode */}
       {loading ? (
@@ -895,244 +1048,374 @@ export default function AdminProductsPage() {
         </div>
       ) : viewMode === "grid" ? (
         /* ================= GRID CARD VIEW ================= */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredProducts.map((p) => (
-            <div
-              key={p._id || p.sku}
-              className="bg-white border border-neutral-200/80 rounded-3xl overflow-hidden flex flex-col justify-between hover:shadow-lg transition-all shadow-[0_2px_16px_rgba(0,0,0,0.03)] group"
-            >
-              <div>
-                <div className="aspect-4/5 bg-neutral-100 relative overflow-hidden">
-                  {p.images?.[0]?.url && (
-                    <Image
-                      src={p.images[0].url}
-                      alt={p.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      sizes="(max-width: 768px) 100vw, 300px"
-                    />
-                  )}
-                  {/* Badges */}
-                  <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start">
-                    <span className="bg-black text-white text-[10px] font-bold px-2 py-0.5 rounded-md uppercase shadow-xs">
-                      {p.category}
-                    </span>
-                    {p.isVirtualTryOn && (
-                      <span className="bg-emerald-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-md shadow-xs">
-                        NeuralFit™
-                      </span>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {paginatedProducts.map((p) => (
+              <div
+                key={p._id || p.sku}
+                className="bg-white border border-neutral-200/80 rounded-3xl overflow-hidden flex flex-col justify-between hover:shadow-lg transition-all shadow-[0_2px_16px_rgba(0,0,0,0.03)] group"
+              >
+                <div>
+                  <div className="aspect-4/5 bg-neutral-100 relative overflow-hidden">
+                    {p.images?.[0]?.url && (
+                      <Image
+                        src={p.images[0].url}
+                        alt={p.name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        sizes="(max-width: 768px) 100vw, 300px"
+                      />
                     )}
-                  </div>
-
-                  <div className="absolute top-2.5 right-2.5">
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs ${
-                        p.stock <= 2
-                          ? "bg-amber-100 text-amber-800 border border-amber-300"
-                          : "bg-white/95 text-emerald-700 border border-neutral-200"
-                      }`}
-                    >
-                      {p.stock} units
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-4 space-y-1.5">
-                  <div className="flex items-center justify-between text-[10px] text-neutral-400 uppercase font-mono">
-                    <span className="font-bold text-neutral-600">{p.brand}</span>
-                    <span>{p.sku}</span>
-                  </div>
-                  <h4 className="text-xs font-bold text-neutral-900 line-clamp-1">{p.name}</h4>
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-sm font-black text-neutral-900">
-                      Rs. {p.price.toLocaleString()}
-                    </span>
-                    {p.originalPrice && p.originalPrice > p.price && (
-                      <span className="text-[10px] text-neutral-400 line-through">
-                        Rs. {p.originalPrice.toLocaleString()}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 pt-0 flex items-center gap-2 border-t border-neutral-100 mt-3 pt-3">
-                <Link
-                  href={`/product/${p.slug}`}
-                  target="_blank"
-                  className="flex-1 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>View</span>
-                </Link>
-                <button
-                  onClick={() => openEditModal(p)}
-                  className="flex-1 py-2 rounded-xl bg-black text-white text-[11px] font-bold uppercase hover:bg-neutral-800 flex items-center justify-center gap-1 transition-colors shadow-xs"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>Edit</span>
-                </button>
-                <button
-                  onClick={() => handleDeleteProduct(p)}
-                  className="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 transition-colors"
-                  title="Delete"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        /* ================= TABLE VIEW ================= */
-        <div className="bg-white border border-neutral-200/80 rounded-3xl overflow-hidden shadow-[0_2px_16px_rgba(0,0,0,0.03)]">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-neutral-700">
-              <thead className="bg-neutral-50 text-[10px] uppercase font-bold text-neutral-500 border-b border-neutral-200/80">
-                <tr>
-                  <th className="py-3.5 px-4">Product</th>
-                  <th className="py-3.5 px-4">SKU / Brand</th>
-                  <th className="py-3.5 px-4">Category</th>
-                  <th className="py-3.5 px-4">Price</th>
-                  <th className="py-3.5 px-4">Stock Adjust</th>
-                  <th className="py-3.5 px-4">Visibility</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100 font-medium">
-                {filteredProducts.map((p) => (
-                  <tr key={p._id || p.sku} className="hover:bg-neutral-50/70 transition-colors">
-                    {/* Item */}
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-12 rounded-lg bg-neutral-100 overflow-hidden relative shrink-0 border border-neutral-200">
-                          {p.images?.[0]?.url && (
-                            <Image src={p.images[0].url} alt={p.name} fill className="object-cover" sizes="40px" />
-                          )}
-                        </div>
-                        <div>
-                          <strong className="text-neutral-900 block font-bold truncate max-w-[220px]">
-                            {p.name}
-                          </strong>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            {p.isVirtualTryOn && (
-                              <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                                NeuralFit
-                              </span>
-                            )}
-                            {p.isFeatured && (
-                              <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                                Featured
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* SKU & Brand */}
-                    <td className="py-3 px-4">
-                      <span className="font-mono text-[11px] uppercase text-neutral-900 block font-bold">{p.sku}</span>
-                      <span className="text-[10px] text-neutral-500 uppercase font-bold">{p.brand}</span>
-                    </td>
-
-                    {/* Category */}
-                    <td className="py-3 px-4">
-                      <span className="bg-neutral-100 text-neutral-800 border border-neutral-200/80 px-2.5 py-1 rounded-lg text-[11px] font-bold inline-block">
+                    {/* Badges */}
+                    <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start">
+                      <span className="bg-black text-white text-[10px] font-bold px-2 py-0.5 rounded-md uppercase shadow-xs">
                         {p.category}
                       </span>
-                      {p.subcategory && (
-                        <span className="block text-[10px] text-neutral-500 mt-0.5">
-                          {p.subcategory}
+                      {p.isVirtualTryOn && (
+                        <span className="bg-emerald-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-md shadow-xs">
+                          NeuralFit™
                         </span>
                       )}
-                    </td>
+                    </div>
 
-                    {/* Price */}
-                    <td className="py-3 px-4">
-                      <div className="font-black text-neutral-900">Rs. {p.price.toLocaleString()}</div>
+                    <div className="absolute top-2.5 right-2.5">
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs ${
+                          p.stock <= 2
+                            ? "bg-amber-100 text-amber-800 border border-amber-300"
+                            : "bg-white/95 text-emerald-700 border border-neutral-200"
+                        }`}
+                      >
+                        {p.stock} units
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] text-neutral-400 uppercase font-mono">
+                      <span className="font-bold text-neutral-600">{p.brand}</span>
+                      <span>{p.sku}</span>
+                    </div>
+                    <h4 className="text-xs font-bold text-neutral-900 line-clamp-1">{p.name}</h4>
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-sm font-black text-neutral-900">
+                        Rs. {p.price.toLocaleString()}
+                      </span>
                       {p.originalPrice && p.originalPrice > p.price && (
                         <span className="text-[10px] text-neutral-400 line-through">
                           Rs. {p.originalPrice.toLocaleString()}
                         </span>
                       )}
-                    </td>
+                    </div>
+                  </div>
+                </div>
 
-                    {/* Quick Stock Adjust */}
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-1.5 bg-neutral-50 px-2 py-1 rounded-xl border border-neutral-200 w-fit">
-                        <button
-                          onClick={() => handleQuickStock(p, -1)}
-                          className="text-neutral-500 hover:text-black px-1.5 font-bold"
-                          title="Decrease 1"
-                        >
-                          -
-                        </button>
-                        <span
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                            p.stock <= 2
-                              ? "bg-amber-50 text-amber-700 border border-amber-200"
-                              : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          }`}
-                        >
-                          {p.stock}
+                <div className="p-4 pt-0 flex items-center gap-2 border-t border-neutral-100 mt-3 pt-3">
+                  <Link
+                    href={`/product/${p.slug}`}
+                    target="_blank"
+                    className="flex-1 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>View</span>
+                  </Link>
+                  <button
+                    onClick={() => openEditModal(p)}
+                    className="flex-1 py-2 rounded-xl bg-black text-white text-[11px] font-bold uppercase hover:bg-neutral-800 flex items-center justify-center gap-1 transition-colors shadow-xs"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteProduct(p)}
+                    className="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-neutral-100 text-xs">
+            <span className="text-neutral-500 font-medium">
+              Showing {filteredProducts.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} – {Math.min(currentPage * pageSize, filteredProducts.length)} of {filteredProducts.length} products
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-neutral-500 hover:bg-neutral-100 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              {Array.from({ length: totalPages }).map((_, idx) => {
+                const page = idx + 1;
+                const isActive = page === currentPage;
+                return (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-7 h-7 rounded-full text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer ${
+                      isActive
+                        ? "bg-black text-white shadow-xs"
+                        : "text-neutral-600 hover:bg-neutral-100"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-neutral-500 hover:bg-neutral-100 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* ================= TABLE VIEW (Matching Image 1) ================= */
+        <div className="space-y-4">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-neutral-700">
+              <thead className="text-xs text-neutral-700 font-semibold border-b border-neutral-100">
+                <tr>
+                  <th className="py-3 px-3 w-8">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded-sm border-neutral-300 text-black focus:ring-black cursor-pointer"
+                    />
+                  </th>
+                  <th className="py-3 px-3 font-semibold">Product</th>
+                  <th className="py-3 px-3 font-semibold">SKU / Brand</th>
+                  <th className="py-3 px-3 font-semibold">Category</th>
+                  <th className="py-3 px-3 font-semibold">Price</th>
+                  <th className="py-3 px-3 font-semibold">Stock</th>
+                  <th className="py-3 px-3 font-semibold">Visibility</th>
+                  <th className="py-3 px-3 font-semibold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {paginatedProducts.map((p) => {
+                  const id = p._id || p.sku;
+                  const isSelected = selectedProductIds.includes(id);
+                  const badge = getCategoryBadgeStyle(p.category || "Uncategorized");
+                  const origPrice =
+                    p.originalPrice && p.originalPrice > p.price
+                      ? p.originalPrice
+                      : Math.round(p.price * 1.2);
+
+                  return (
+                    <tr key={id} className="hover:bg-neutral-50/70 transition-colors">
+                      {/* Checkbox */}
+                      <td className="py-3 px-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectProduct(id)}
+                          className="w-4 h-4 rounded-sm border-neutral-300 text-black focus:ring-black cursor-pointer"
+                        />
+                      </td>
+
+                      {/* Product Thumbnail & Title with Featured Badge */}
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-neutral-100 overflow-hidden relative shrink-0 border border-neutral-200/80">
+                            {p.images?.[0]?.url && (
+                              <img
+                                src={p.images[0].url}
+                                alt={p.name}
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-xs font-semibold text-neutral-900 block truncate max-w-[240px]">
+                              {p.name}
+                            </span>
+                            <span className="text-[10px] font-bold text-amber-600 flex items-center gap-1 mt-0.5">
+                              <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
+                              <span>Featured</span>
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* SKU / Brand */}
+                      <td className="py-3 px-3">
+                        <span className="font-mono text-xs font-semibold text-neutral-800 block">
+                          {p.sku}
                         </span>
+                        <span className="text-[10px] font-bold uppercase text-neutral-500">
+                          {p.brand}
+                        </span>
+                      </td>
+
+                      {/* Category with soft badge and icon */}
+                      <td className="py-3 px-3">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1 border ${badge.bg}`}>
+                          <span>{badge.icon}</span>
+                          <span>{p.category}</span>
+                        </span>
+                      </td>
+
+                      {/* Price (Current & Strike-through original) */}
+                      <td className="py-3 px-3">
+                        <div className="font-bold text-xs text-neutral-900">
+                          Rs. {p.price.toLocaleString()}
+                        </div>
+                        <div className="text-[11px] text-neutral-400 line-through">
+                          Rs. {origPrice.toLocaleString()}
+                        </div>
+                      </td>
+
+                      {/* Stock Stepper [ -  20  + ] */}
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-1.5 bg-neutral-50 px-2.5 py-1 rounded-full border border-neutral-200/90 w-fit">
+                          <button
+                            type="button"
+                            onClick={() => handleQuickStock(p, -1)}
+                            className="text-neutral-500 hover:text-black font-mono text-xs px-1 cursor-pointer font-bold"
+                            title="Decrease stock"
+                          >
+                            -
+                          </button>
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                              p.stock <= 5
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-emerald-100 text-emerald-800"
+                            }`}
+                          >
+                            {p.stock}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleQuickStock(p, 1)}
+                            className="text-neutral-500 hover:text-black font-mono text-xs px-1 cursor-pointer font-bold"
+                            title="Increase stock"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Visibility (Toggle Switch + Published text) */}
+                      <td className="py-3 px-3">
                         <button
-                          onClick={() => handleQuickStock(p, 1)}
-                          className="text-neutral-500 hover:text-black px-1.5 font-bold"
-                          title="Increase 1"
+                          type="button"
+                          onClick={() => handleToggleActive(p)}
+                          className="flex items-center gap-2 cursor-pointer group"
+                          title="Toggle Visibility"
                         >
-                          +
+                          <span
+                            className={`w-8 h-4.5 rounded-full transition-colors relative flex items-center p-0.5 ${
+                              p.isActive !== false ? "bg-emerald-500" : "bg-neutral-300"
+                            }`}
+                          >
+                            <span
+                              className={`w-3.5 h-3.5 rounded-full bg-white transition-transform shadow-2xs ${
+                                p.isActive !== false ? "translate-x-3.5" : "translate-x-0"
+                              }`}
+                            />
+                          </span>
+                          <span className="text-xs font-medium text-neutral-700">
+                            {p.isActive !== false ? "Published" : "Hidden"}
+                          </span>
                         </button>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Visibility */}
-                    <td className="py-3 px-4">
-                      <button
-                        onClick={() => handleToggleActive(p)}
-                        className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-colors ${
-                          p.isActive
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                            : "bg-neutral-100 text-neutral-600 border-neutral-200 hover:bg-neutral-200"
-                        }`}
-                      >
-                        {p.isActive ? "Published" : "Hidden"}
-                      </button>
-                    </td>
-
-                    {/* Actions */}
-                    <td className="py-3 px-4 text-right space-x-1.5">
-                      <Link
-                        href={`/product/${p.slug}`}
-                        target="_blank"
-                        className="p-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-600 inline-block align-middle transition-colors"
-                        title="View Live Product"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </Link>
-                      <button
-                        onClick={() => openEditModal(p)}
-                        className="p-1.5 rounded-lg bg-black hover:bg-neutral-800 text-white inline-block align-middle transition-colors shadow-xs"
-                        title="Edit Product"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteProduct(p)}
-                        className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 inline-block align-middle transition-colors"
-                        title="Delete Product"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      {/* Actions (ExternalLink, Edit, Trash) */}
+                      <td className="py-3 px-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Link
+                            href={`/product/${p.slug}`}
+                            target="_blank"
+                            className="p-1.5 rounded-lg text-neutral-400 hover:text-black hover:bg-neutral-100 transition-colors"
+                            title="View Live Product"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(p)}
+                            className="p-1.5 rounded-lg text-neutral-400 hover:text-black hover:bg-neutral-100 transition-colors cursor-pointer"
+                            title="Edit Product"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteProduct(p)}
+                            className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            title="Delete Product"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Footer */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-neutral-100 text-xs">
+            <span className="text-neutral-500 font-medium">
+              Showing {filteredProducts.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} – {Math.min(currentPage * pageSize, filteredProducts.length)} of {filteredProducts.length} products
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-neutral-500 hover:bg-neutral-100 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              {Array.from({ length: totalPages }).map((_, idx) => {
+                const page = idx + 1;
+                const isActive = page === currentPage;
+                return (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-7 h-7 rounded-full text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer ${
+                      isActive
+                        ? "bg-black text-white shadow-xs"
+                        : "text-neutral-600 hover:bg-neutral-100"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-neutral-500 hover:bg-neutral-100 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
+      </div>
 
       {/* ================= ADD / EDIT PRODUCT MODAL ================= */}
       {isModalOpen && (
