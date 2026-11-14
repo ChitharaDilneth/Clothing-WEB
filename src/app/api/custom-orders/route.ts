@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCustomOrders, createCustomOrder } from "@/lib/store";
+import { getCustomOrders, createCustomOrder, updateCustomOrderStatus } from "@/lib/store";
 
 export async function GET() {
   try {
@@ -22,5 +22,20 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("Custom orders POST error:", err);
     return NextResponse.json({ message: "Failed to submit custom order" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { orderNumber, status } = body;
+    if (!orderNumber || !status) {
+      return NextResponse.json({ message: "orderNumber and status are required" }, { status: 400 });
+    }
+    await updateCustomOrderStatus(orderNumber, status);
+    return NextResponse.json({ success: true, status });
+  } catch (err) {
+    console.error("Custom orders PATCH error:", err);
+    return NextResponse.json({ message: "Failed to update custom order status" }, { status: 500 });
   }
 }

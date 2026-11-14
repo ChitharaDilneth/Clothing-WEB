@@ -908,6 +908,22 @@ export async function createCustomOrder(data: Partial<CustomOrderRecord>): Promi
   return record;
 }
 
+export async function updateCustomOrderStatus(orderNumber: string, status: string): Promise<boolean> {
+  const db = await connectDB();
+  if (db) {
+    try {
+      await CustomOrderModel.findOneAndUpdate({ orderNumber }, { status });
+    } catch (e) {
+      console.error("Error updating custom order in MongoDB:", e);
+    }
+  }
+  const mem = memoryCustomOrders.find((o) => o.orderNumber === orderNumber);
+  if (mem) {
+    mem.status = status as any;
+  }
+  return true;
+}
+
 export async function getSiteSettings(): Promise<ISiteSettings> {
   const db = await connectDB();
   if (db) {
