@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import Image from "next/image";
 import {
   Search,
   ShoppingBag,
@@ -17,37 +16,21 @@ import {
   MoreVertical,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Check,
   X,
   Loader2,
   Clock,
   Edit3,
+  Trash2,
+  Eye,
+  User,
+  MapPin,
+  Phone,
+  Mail,
 } from "lucide-react";
-import { IOrder, OrderStatus, PaymentStatus } from "@/types";
+import { IOrder, OrderStatus, PaymentStatus, IProduct } from "@/types";
 import { toast } from "sonner";
-
-// Decorative SVG wave for Stat Cards (matching target design)
-function StatWave({ color = "#10b981" }: { color?: string }) {
-  return (
-    <svg
-      className="w-20 sm:w-24 h-10 opacity-70 shrink-0 self-end -mb-1 -mr-1"
-      viewBox="0 0 100 40"
-      fill="none"
-    >
-      <path
-        d="M0 35 Q 25 15, 50 26 T 100 12 L 100 40 L 0 40 Z"
-        fill={color}
-        fillOpacity="0.18"
-      />
-      <path
-        d="M0 35 Q 25 15, 50 26 T 100 12"
-        stroke={color}
-        strokeWidth="2.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
 
 // Customer avatar initials helper
 const getInitials = (name?: string) => {
@@ -138,6 +121,7 @@ const getFulfillmentBadge = (status?: string) => {
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<IOrder[]>([]);
+  const [products, setProducts] = useState<IProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filters
@@ -155,36 +139,56 @@ export default function AdminOrdersPage() {
   // Selected Order for Status Update Modal
   const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null);
   const [newStatus, setNewStatus] = useState<OrderStatus>("processing");
+  const [newPaymentStatus, setNewPaymentStatus] = useState<PaymentStatus>("pending");
   const [trackingNumber, setTrackingNumber] = useState("");
   const [internalNotes, setInternalNotes] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Quick Create Order Modal
+  // View Details Modal State
+  const [viewDetailsOrder, setViewDetailsOrder] = useState<IOrder | null>(null);
+
+  // Quick Action Menu Popover per order
+  const [openMenuOrderNumber, setOpenMenuOrderNumber] = useState<string | null>(null);
+
+  // Comprehensive Create Order Modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createCustomerName, setCreateCustomerName] = useState("");
   const [createCustomerPhone, setCreateCustomerPhone] = useState("");
   const [createCustomerEmail, setCreateCustomerEmail] = useState("");
   const [createAddress, setCreateAddress] = useState("");
+  const [createCity, setCreateCity] = useState("Colombo");
+  const [createDistrict, setCreateDistrict] = useState("Colombo");
+  const [selectedCatalogProduct, setSelectedCatalogProduct] = useState("");
   const [createItemName, setCreateItemName] = useState("");
   const [createItemPrice, setCreateItemPrice] = useState<number>(3400);
-  const [createPaymentMethod, setCreatePaymentMethod] = useState("COD");
+  const [createQuantity, setCreateQuantity] = useState<number>(1);
+  const [createShippingFee, setCreateShippingFee] = useState<number>(450);
+  const [createPaymentMethod, setCreatePaymentMethod] = useState("cod");
+  const [createPaymentStatus, setCreatePaymentStatus] = useState<PaymentStatus>("pending");
+  const [createOrderStatus, setCreateOrderStatus] = useState<OrderStatus>("processing");
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
 
-  const loadOrders = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/orders");
-      const data = await res.json();
-      setOrders(data || []);
+      const [ordRes, prodRes] = await Promise.all([
+        fetch("/api/orders"),
+        fetch("/api/products?limit=200"),
+      ]);
+      const ordData = await ordRes.json();
+      const prodData = await prodRes.json();
+      setOrders(Array.isArray(ordData) ? ordData : []);
+      setProducts(prodData.products || []);
     } catch (e) {
       console.error("Failed to load orders", e);
+      toast.error("Failed to load orders");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadOrders();
+    loadData();
   }, []);
 
   // Filtered Orders
@@ -194,23 +198,30 @@ export default function AdminOrdersPage() {
       const custPhone = o.customer?.phone || "";
       const orderNum = o.orderNumber || "";
 
+      // 1. Search filter
       const matchesSearch =
         !search ||
         orderNum.toLowerCase().includes(search.toLowerCase()) ||
         custName.toLowerCase().includes(search.toLowerCase()) ||
-        custPhone.includes(search);
+        custPhone.includes(search) ||
+        (o.items || []).some((i) => i.name.toLowerCase().includes(search.toLowerCase()));
 
+      // 2. Fulfillment Status filter
       const matchesFulfillment =
-        fulfillmentFilter === "all" || o.orderStatus === fulfillmentFilter;
+        fulfillmentFilter === "all" ||
+        (o.orderStatus || "").toLowerCase() === fulfillmentFilter.toLowerCase();
 
+      // 3. Payment Method filter
       const matchesPaymentMethod =
         paymentMethodFilter === "all" ||
         (o.paymentMethod || "").toLowerCase().includes(paymentMethodFilter.toLowerCase());
 
+      // 4. Payment Status ("All Statuses") filter
       const matchesPaymentStatus =
         paymentStatusFilter === "all" ||
         (o.paymentStatus || "").toLowerCase() === paymentStatusFilter.toLowerCase();
 
+      // 5. Date Range filter
       let matchesDate = true;
       if (dateRange !== "all") {
         const orderTime = new Date(o.createdAt || Date.now()).getTime();
@@ -282,8 +293,10 @@ export default function AdminOrdersPage() {
   const openStatusModal = (ord: IOrder) => {
     setSelectedOrder(ord);
     setNewStatus(ord.orderStatus);
+    setNewPaymentStatus(ord.paymentStatus || "pending");
     setTrackingNumber(ord.trackingNumber || "");
     setInternalNotes(ord.internalNotes || "");
+    setOpenMenuOrderNumber(null);
   };
 
   // Update Status
@@ -292,28 +305,74 @@ export default function AdminOrdersPage() {
     if (!selectedOrder) return;
 
     setIsUpdating(true);
+    const toastId = toast.loading(`Updating order #${selectedOrder.orderNumber}...`);
     try {
       const res = await fetch(`/api/orders/${selectedOrder.orderNumber}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: newStatus,
+          paymentStatus: newPaymentStatus,
           trackingNumber,
           internalNotes,
         }),
       });
 
       if (res.ok) {
-        toast.success(`Order #${selectedOrder.orderNumber} status updated to ${newStatus}`);
+        toast.success(`Order #${selectedOrder.orderNumber} updated!`, { id: toastId });
         setSelectedOrder(null);
-        loadOrders();
+        loadData();
       } else {
-        toast.error("Failed to update status");
+        toast.error("Failed to update status", { id: toastId });
       }
     } catch {
-      toast.error("Network error updating order");
+      toast.error("Network error updating order", { id: toastId });
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  // Quick One-Click Status Update (from ... menu)
+  const handleQuickStatusUpdate = async (
+    orderNumber: string,
+    statusUpdates: { status?: OrderStatus; paymentStatus?: PaymentStatus }
+  ) => {
+    setOpenMenuOrderNumber(null);
+    const toastId = toast.loading(`Updating ${orderNumber}...`);
+    try {
+      const res = await fetch(`/api/orders/${orderNumber}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(statusUpdates),
+      });
+      if (res.ok) {
+        toast.success(`Order #${orderNumber} updated!`, { id: toastId });
+        loadData();
+      } else {
+        toast.error("Failed to update order", { id: toastId });
+      }
+    } catch {
+      toast.error("Network error", { id: toastId });
+    }
+  };
+
+  // Delete Order
+  const handleDeleteOrder = async (orderNumber: string) => {
+    setOpenMenuOrderNumber(null);
+    if (!confirm(`Are you sure you want to permanently delete order #${orderNumber}?`)) {
+      return;
+    }
+    const toastId = toast.loading(`Deleting order #${orderNumber}...`);
+    try {
+      const res = await fetch(`/api/orders/${orderNumber}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success(`Order #${orderNumber} deleted`, { id: toastId });
+        loadData();
+      } else {
+        toast.error("Failed to delete order", { id: toastId });
+      }
+    } catch {
+      toast.error("Network error deleting order", { id: toastId });
     }
   };
 
@@ -333,6 +392,7 @@ export default function AdminOrdersPage() {
       "Payment Method",
       "Payment Status",
       "Fulfillment Status",
+      "Tracking Number",
     ];
     const rows = orders.map((o) => [
       o.orderNumber,
@@ -344,6 +404,7 @@ export default function AdminOrdersPage() {
       o.paymentMethod || "",
       o.paymentStatus || "",
       o.orderStatus || "",
+      o.trackingNumber || "",
     ]);
     const csvContent =
       "data:text/csv;charset=utf-8," +
@@ -358,16 +419,24 @@ export default function AdminOrdersPage() {
     toast.success("Orders CSV exported successfully!");
   };
 
-  // Create Order Submit
+  // Create Order Submit (Full CRUD)
   const handleCreateOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!createCustomerName.trim() || !createCustomerPhone.trim()) {
       toast.error("Customer name and phone are required");
       return;
     }
+    if (!createAddress.trim()) {
+      toast.error("Delivery address is required");
+      return;
+    }
+
     setIsCreatingOrder(true);
-    const toastId = toast.loading("Creating order...");
+    const toastId = toast.loading("Creating new customer order...");
     try {
+      const subtotal = createItemPrice * createQuantity;
+      const total = subtotal + createShippingFee;
+
       const payload = {
         customer: {
           name: createCustomerName.trim(),
@@ -375,27 +444,29 @@ export default function AdminOrdersPage() {
           email: createCustomerEmail.trim() || "customer@thebrandhub.lk",
         },
         shippingAddress: {
-          addressLine1: createAddress.trim() || "Islandwide Delivery",
-          city: "Colombo",
-          postalCode: "00100",
+          street: createAddress.trim(),
+          city: createCity.trim() || "Colombo",
+          district: createDistrict.trim() || "Colombo",
+          postalCode: "11500",
           country: "Sri Lanka",
         },
         items: [
           {
             name: createItemName.trim() || "Waves Lifestyle Collection Item",
             price: createItemPrice || 3400,
-            quantity: 1,
-            sku: `W-GEN-${Math.floor(100 + Math.random() * 900)}`,
+            quantity: createQuantity || 1,
+            sku: `TBH-${Math.floor(100 + Math.random() * 900)}`,
             image:
               "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=200&q=80",
           },
         ],
-        subtotal: createItemPrice || 3400,
-        shippingFee: 0,
-        total: createItemPrice || 3400,
+        subtotal,
+        shippingFee: createShippingFee,
+        discount: 0,
+        total,
         paymentMethod: createPaymentMethod,
-        paymentStatus: createPaymentMethod === "Card" ? "paid" : "pending",
-        orderStatus: "confirmed",
+        paymentStatus: createPaymentStatus,
+        orderStatus: createOrderStatus,
       };
 
       const res = await fetch("/api/orders", {
@@ -405,14 +476,23 @@ export default function AdminOrdersPage() {
       });
 
       if (res.ok) {
-        toast.success("New order created successfully!", { id: toastId });
+        const created = await res.json();
+        toast.success(`Order #${created.orderNumber || "NEW"} created successfully!`, {
+          id: toastId,
+        });
         setIsCreateOpen(false);
+        // Reset form
         setCreateCustomerName("");
         setCreateCustomerPhone("");
+        setCreateCustomerEmail("");
         setCreateAddress("");
-        loadOrders();
+        setCreateItemName("");
+        setCreateItemPrice(3400);
+        setCreateQuantity(1);
+        loadData();
       } else {
-        toast.error("Failed to create order", { id: toastId });
+        const err = await res.json();
+        toast.error(err.message || "Failed to create order", { id: toastId });
       }
     } catch {
       toast.error("Network error creating order", { id: toastId });
@@ -423,23 +503,25 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Main Container Card matching Product Management & Target Design */}
+      {/* Main Container Card */}
       <div className="bg-white border border-neutral-200/90 rounded-[28px] sm:rounded-[36px] p-6 sm:p-8 shadow-xs space-y-6">
-        {/* 1. Top Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <Calendar className="w-6 h-6 text-neutral-900 shrink-0" />
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-900">
+        {/* 1. Top Header (With squircle icon and orange vertical accent line) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-white border border-neutral-200 shadow-2xs flex items-center justify-center text-neutral-900 shrink-0">
+              <Calendar className="w-5 h-5 text-neutral-800" />
+            </div>
+            <div className="border-l-3 border-amber-500 pl-3">
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-neutral-900">
                 Order Management
               </h1>
+              <p className="text-xs text-neutral-500 mt-0.5 font-medium">
+                Review customer purchases, assign courier waybills, and update dispatch status.
+              </p>
             </div>
-            <p className="text-xs text-neutral-500 mt-1 font-medium">
-              Review customer purchases, assign courier waybills, and update dispatch status.
-            </p>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
             <button
               type="button"
               onClick={handleExportCSV}
@@ -450,8 +532,15 @@ export default function AdminOrdersPage() {
             </button>
             <button
               type="button"
-              onClick={() => setIsCreateOpen(true)}
-              className="bg-black hover:bg-neutral-800 text-white px-5 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+              onClick={() => {
+                if (products.length > 0) {
+                  setSelectedCatalogProduct(products[0].name);
+                  setCreateItemName(products[0].name);
+                  setCreateItemPrice(products[0].price);
+                }
+                setIsCreateOpen(true);
+              }}
+              className="bg-neutral-900 hover:bg-neutral-800 text-white px-5 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Create Order</span>
@@ -459,10 +548,10 @@ export default function AdminOrdersPage() {
           </div>
         </div>
 
-        {/* 2. 5 Stats / KPI Bento Cards (Row of 5 Cards matching target design) */}
+        {/* 2. 5 Stats / KPI Bento Cards (Clean cards WITHOUT color wave curves) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
           {/* Card 1: Total Orders */}
-          <div className="bg-gradient-to-r from-emerald-50/40 via-white to-white border border-neutral-200/90 rounded-2xl p-4 flex items-center justify-between gap-2 shadow-2xs hover:shadow-xs transition-shadow overflow-hidden">
+          <div className="bg-gradient-to-r from-emerald-50/40 via-white to-white border border-neutral-200/90 rounded-2xl p-4 flex items-center justify-between gap-2 shadow-2xs hover:shadow-xs transition-shadow">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
                 <ShoppingBag className="w-5 h-5" />
@@ -479,11 +568,10 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
             </div>
-            <StatWave color="#10b981" />
           </div>
 
           {/* Card 2: Total Items */}
-          <div className="bg-gradient-to-r from-blue-50/40 via-white to-white border border-neutral-200/90 rounded-2xl p-4 flex items-center justify-between gap-2 shadow-2xs hover:shadow-xs transition-shadow overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-50/40 via-white to-white border border-neutral-200/90 rounded-2xl p-4 flex items-center justify-between gap-2 shadow-2xs hover:shadow-xs transition-shadow">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
                 <Package className="w-5 h-5" />
@@ -497,11 +585,10 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
             </div>
-            <StatWave color="#3b82f6" />
           </div>
 
           {/* Card 3: Total Amount */}
-          <div className="bg-gradient-to-r from-orange-50/40 via-white to-white border border-neutral-200/90 rounded-2xl p-4 flex items-center justify-between gap-2 shadow-2xs hover:shadow-xs transition-shadow overflow-hidden">
+          <div className="bg-gradient-to-r from-orange-50/40 via-white to-white border border-neutral-200/90 rounded-2xl p-4 flex items-center justify-between gap-2 shadow-2xs hover:shadow-xs transition-shadow">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500 shrink-0">
                 <CreditCard className="w-5 h-5" />
@@ -515,11 +602,10 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
             </div>
-            <StatWave color="#f97316" />
           </div>
 
           {/* Card 4: Processing */}
-          <div className="bg-gradient-to-r from-amber-50/40 via-white to-white border border-neutral-200/90 rounded-2xl p-4 flex items-center justify-between gap-2 shadow-2xs hover:shadow-xs transition-shadow overflow-hidden">
+          <div className="bg-gradient-to-r from-amber-50/40 via-white to-white border border-neutral-200/90 rounded-2xl p-4 flex items-center justify-between gap-2 shadow-2xs hover:shadow-xs transition-shadow">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 shrink-0">
                 <Truck className="w-5 h-5" />
@@ -533,11 +619,10 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
             </div>
-            <StatWave color="#f59e0b" />
           </div>
 
           {/* Card 5: Completed */}
-          <div className="bg-gradient-to-r from-emerald-50/40 via-white to-white border border-neutral-200/90 rounded-2xl p-4 flex items-center justify-between gap-2 shadow-2xs hover:shadow-xs transition-shadow overflow-hidden">
+          <div className="bg-gradient-to-r from-emerald-50/40 via-white to-white border border-neutral-200/90 rounded-2xl p-4 flex items-center justify-between gap-2 shadow-2xs hover:shadow-xs transition-shadow">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
                 <CheckCircle2 className="w-5 h-5" />
@@ -551,11 +636,10 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
             </div>
-            <StatWave color="#10b981" />
           </div>
         </div>
 
-        {/* 3. Toolbar: Search Input & Filter Dropdowns (Rounded-full pills matching target design) */}
+        {/* 3. Toolbar: Search Input & Filter Dropdowns (Correctly aligned ChevronDown arrows) */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
           {/* Search Input */}
           <div className="relative flex-1">
@@ -568,74 +652,89 @@ export default function AdminOrdersPage() {
                 setSearch(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full bg-white border border-neutral-200 rounded-full pl-11 pr-4 py-2 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-hidden focus:border-black font-medium shadow-2xs"
+              className="w-full bg-white border border-neutral-200 rounded-full pl-11 pr-4 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:outline-hidden focus:border-neutral-900 font-medium shadow-2xs"
             />
           </div>
 
-          {/* Filters */}
+          {/* Filters with Proper ChevronDown Alignment */}
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Date Range */}
-            <select
-              value={dateRange}
-              onChange={(e) => {
-                setDateRange(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-white border border-neutral-200 rounded-full px-3.5 py-2 text-xs text-neutral-800 focus:outline-hidden focus:border-black cursor-pointer font-medium shadow-2xs"
-            >
-              <option value="all">📅 Date Range: All</option>
-              <option value="today">📅 Today</option>
-              <option value="week">📅 Last 7 Days</option>
-              <option value="month">📅 This Month</option>
-            </select>
+            {/* Date Range Dropdown */}
+            <div className="relative">
+              <Calendar className="w-3.5 h-3.5 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <select
+                value={dateRange}
+                onChange={(e) => {
+                  setDateRange(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="appearance-none bg-white border border-neutral-200/90 text-neutral-800 text-xs font-semibold rounded-full pl-9 pr-8 py-2.5 shadow-2xs focus:outline-hidden focus:border-neutral-900 cursor-pointer"
+              >
+                <option value="all">Date Range</option>
+                <option value="today">Today</option>
+                <option value="week">Last 7 Days</option>
+                <option value="month">This Month</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
 
-            {/* Fulfillment Status */}
-            <select
-              value={fulfillmentFilter}
-              onChange={(e) => {
-                setFulfillmentFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-white border border-neutral-200 rounded-full px-3.5 py-2 text-xs text-neutral-800 focus:outline-hidden focus:border-black cursor-pointer font-medium shadow-2xs"
-            >
-              <option value="all">🚚 Fulfillment Status: All</option>
-              <option value="pending">🚚 Pending</option>
-              <option value="confirmed">🚚 Confirmed</option>
-              <option value="processing">🚚 Processing</option>
-              <option value="shipped">🚚 Shipped</option>
-              <option value="delivered">🚚 Delivered</option>
-              <option value="cancelled">🚚 Cancelled</option>
-            </select>
+            {/* Fulfillment Status Dropdown */}
+            <div className="relative">
+              <Truck className="w-3.5 h-3.5 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <select
+                value={fulfillmentFilter}
+                onChange={(e) => {
+                  setFulfillmentFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="appearance-none bg-white border border-neutral-200/90 text-neutral-800 text-xs font-semibold rounded-full pl-9 pr-8 py-2.5 shadow-2xs focus:outline-hidden focus:border-neutral-900 cursor-pointer"
+              >
+                <option value="all">Fulfillment Status</option>
+                <option value="processing">Processing</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
 
-            {/* Payment Method */}
-            <select
-              value={paymentMethodFilter}
-              onChange={(e) => {
-                setPaymentMethodFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-white border border-neutral-200 rounded-full px-3.5 py-2 text-xs text-neutral-800 focus:outline-hidden focus:border-black cursor-pointer font-medium shadow-2xs"
-            >
-              <option value="all">💳 Payment Method: All</option>
-              <option value="COD">💳 COD</option>
-              <option value="Card">💳 Online Card</option>
-              <option value="Koko">💳 Koko / Mint</option>
-            </select>
+            {/* Payment Method Dropdown */}
+            <div className="relative">
+              <CreditCard className="w-3.5 h-3.5 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <select
+                value={paymentMethodFilter}
+                onChange={(e) => {
+                  setPaymentMethodFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="appearance-none bg-white border border-neutral-200/90 text-neutral-800 text-xs font-semibold rounded-full pl-9 pr-8 py-2.5 shadow-2xs focus:outline-hidden focus:border-neutral-900 cursor-pointer"
+              >
+                <option value="all">Payment Method</option>
+                <option value="cod">Cash on Delivery (COD)</option>
+                <option value="card">Online Card</option>
+                <option value="koko">Koko / Mintpay</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
 
-            {/* All Statuses (Payment Status) */}
-            <select
-              value={paymentStatusFilter}
-              onChange={(e) => {
-                setPaymentStatusFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-white border border-neutral-200 rounded-full px-3.5 py-2 text-xs text-neutral-800 focus:outline-hidden focus:border-black cursor-pointer font-medium shadow-2xs"
-            >
-              <option value="all">🏷️ All Statuses</option>
-              <option value="paid">🏷️ Paid</option>
-              <option value="pending">🏷️ Pending</option>
-              <option value="failed">🏷️ Failed</option>
-            </select>
+            {/* All Statuses (Payment Status) Dropdown */}
+            <div className="relative">
+              <Tag className="w-3.5 h-3.5 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <select
+                value={paymentStatusFilter}
+                onChange={(e) => {
+                  setPaymentStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="appearance-none bg-white border border-neutral-200/90 text-neutral-800 text-xs font-semibold rounded-full pl-9 pr-8 py-2.5 shadow-2xs focus:outline-hidden focus:border-neutral-900 cursor-pointer"
+              >
+                <option value="all">All Statuses</option>
+                <option value="paid">Paid</option>
+                <option value="pending">Pending</option>
+                <option value="failed">Failed</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
 
             {/* Filter Reset Button */}
             <button
@@ -656,11 +755,11 @@ export default function AdminOrdersPage() {
           </div>
         </div>
 
-        {/* 4. Orders Table (Matching target design) */}
+        {/* 4. Orders Table */}
         {loading ? (
           <div className="p-16 text-center text-neutral-500">
             <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-xs">Loading TBH orders...</p>
+            <p className="text-xs">Loading orders...</p>
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="p-16 text-center text-neutral-500 space-y-3">
@@ -678,33 +777,33 @@ export default function AdminOrdersPage() {
                 setPaymentMethodFilter("all");
                 setPaymentStatusFilter("all");
               }}
-              className="px-4 py-2 bg-black hover:bg-neutral-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
             >
               Clear Filters
             </button>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-2xl border border-neutral-200/80 bg-white">
               <table className="w-full text-left text-xs text-neutral-700">
-                <thead className="text-[11px] uppercase font-bold text-neutral-500 border-b border-neutral-100">
+                <thead className="bg-neutral-50/70 text-[10px] uppercase font-bold text-neutral-500 border-b border-neutral-200">
                   <tr>
-                    <th className="py-3 px-3 w-8">
+                    <th className="py-3.5 pl-4 pr-2 w-10">
                       <input
                         type="checkbox"
                         checked={isAllSelected}
                         onChange={toggleSelectAll}
-                        className="w-4 h-4 rounded-sm border-neutral-300 text-black focus:ring-black cursor-pointer"
+                        className="w-3.5 h-3.5 rounded accent-black cursor-pointer"
                       />
                     </th>
-                    <th className="py-3 px-3">Order Ref</th>
-                    <th className="py-3 px-3">Date</th>
-                    <th className="py-3 px-3">Customer</th>
-                    <th className="py-3 px-3">Items</th>
-                    <th className="py-3 px-3">Total Amount</th>
-                    <th className="py-3 px-3">Payment</th>
-                    <th className="py-3 px-3">Fulfillment Status</th>
-                    <th className="py-3 px-3 text-right">Actions</th>
+                    <th className="py-3.5 px-4 font-bold tracking-wider">ORDER REF</th>
+                    <th className="py-3.5 px-4 font-bold tracking-wider">DATE</th>
+                    <th className="py-3.5 px-4 font-bold tracking-wider">CUSTOMER</th>
+                    <th className="py-3.5 px-4 font-bold tracking-wider">ITEMS</th>
+                    <th className="py-3.5 px-4 font-bold tracking-wider">TOTAL AMOUNT</th>
+                    <th className="py-3.5 px-4 font-bold tracking-wider">PAYMENT</th>
+                    <th className="py-3.5 px-4 font-bold tracking-wider">FULFILLMENT STATUS</th>
+                    <th className="py-3.5 pr-4 pl-2 text-right font-bold tracking-wider">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 font-medium">
@@ -722,34 +821,40 @@ export default function AdminOrdersPage() {
                       .map((i) => i.name)
                       .filter(Boolean)
                       .join(", ") || "Waves Lifestyle Item";
+                    const isMenuOpen = openMenuOrderNumber === o.orderNumber;
 
                     return (
-                      <tr key={id} className="hover:bg-neutral-50/70 transition-colors">
+                      <tr
+                        key={id}
+                        className={`hover:bg-neutral-50/70 transition-colors ${
+                          isSelected ? "bg-amber-50/20" : ""
+                        }`}
+                      >
                         {/* Checkbox */}
-                        <td className="py-3 px-3">
+                        <td className="py-3.5 pl-4 pr-2">
                           <input
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => toggleSelectOrder(id)}
-                            className="w-4 h-4 rounded-sm border-neutral-300 text-black focus:ring-black cursor-pointer"
+                            className="w-3.5 h-3.5 rounded accent-black cursor-pointer"
                           />
                         </td>
 
                         {/* Order Ref */}
-                        <td className="py-3 px-3">
+                        <td className="py-3.5 px-4">
                           <span className="font-bold text-xs text-neutral-900 font-mono block">
                             {o.orderNumber || "TBH-ORDER"}
                           </span>
                         </td>
 
                         {/* Date */}
-                        <td className="py-3 px-3">
+                        <td className="py-3.5 px-4">
                           <div className="text-xs text-neutral-800 font-medium">{date}</div>
-                          <div className="text-[10px] text-neutral-400">{time}</div>
+                          <div className="text-[10px] text-neutral-400 font-normal">{time}</div>
                         </td>
 
                         {/* Customer */}
-                        <td className="py-3 px-3">
+                        <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2.5">
                             <div
                               className={`w-8 h-8 rounded-full font-bold text-xs flex items-center justify-center shrink-0 ${getAvatarColor(
@@ -758,8 +863,8 @@ export default function AdminOrdersPage() {
                             >
                               {getInitials(o.customer?.name)}
                             </div>
-                            <div>
-                              <strong className="text-xs font-bold text-neutral-900 block leading-tight">
+                            <div className="min-w-0">
+                              <strong className="text-xs font-bold text-neutral-900 block leading-tight truncate">
                                 {o.customer?.name || "Customer"}
                               </strong>
                               <span className="text-[11px] text-neutral-500 font-medium block mt-0.5">
@@ -769,45 +874,27 @@ export default function AdminOrdersPage() {
                           </div>
                         </td>
 
-                        {/* Items */}
-                        <td className="py-3 px-3">
-                          <div className="flex items-center gap-2.5">
-                            <div className="flex items-center -space-x-1 shrink-0">
-                              {(o.items && o.items.length > 0 ? o.items.slice(0, 2) : [1]).map(
-                                (item, idx) => (
-                                  <img
-                                    key={idx}
-                                    src={
-                                      typeof item === "object" && item.image
-                                        ? item.image
-                                        : "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=150&q=80"
-                                    }
-                                    alt="item"
-                                    className="w-8 h-8 rounded-lg object-cover border border-neutral-200 bg-neutral-100"
-                                  />
-                                )
-                              )}
-                            </div>
-                            <div>
-                              <span className="text-xs font-bold text-neutral-900 block leading-tight">
-                                {itemCount} item{itemCount !== 1 ? "s" : ""}
-                              </span>
-                              <span className="text-[10px] text-neutral-400 block truncate max-w-[160px]">
-                                {itemNames}
-                              </span>
-                            </div>
+                        {/* ITEMS Column: NO PHOTOS, strictly Items Count & Names */}
+                        <td className="py-3.5 px-4">
+                          <div>
+                            <span className="text-xs font-bold text-neutral-900 block leading-tight">
+                              {itemCount} {itemCount === 1 ? "item" : "items"}
+                            </span>
+                            <span className="text-[11px] text-neutral-500 block truncate max-w-[200px] font-normal mt-0.5">
+                              {itemNames}
+                            </span>
                           </div>
                         </td>
 
                         {/* Total Amount */}
-                        <td className="py-3 px-3">
+                        <td className="py-3.5 px-4">
                           <span className="font-bold text-xs text-neutral-900 font-mono">
                             Rs. {(o.total || 0).toLocaleString()}
                           </span>
                         </td>
 
                         {/* Payment */}
-                        <td className="py-3 px-3">
+                        <td className="py-3.5 px-4">
                           <div>
                             <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-900">
                               <span
@@ -817,7 +904,9 @@ export default function AdminOrdersPage() {
                                     : "bg-amber-500"
                                 }`}
                               />
-                              <span>{isCod ? "COD" : o.paymentMethod || "Card"}</span>
+                              <span className="uppercase text-[11px]">
+                                {isCod ? "COD" : o.paymentMethod || "Card"}
+                              </span>
                             </div>
                             <span
                               className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 mt-1 ${
@@ -833,7 +922,7 @@ export default function AdminOrdersPage() {
                         </td>
 
                         {/* Fulfillment Status */}
-                        <td className="py-3 px-3">
+                        <td className="py-3.5 px-4">
                           <span
                             className={`px-3 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 border ${badge.bg}`}
                           >
@@ -842,25 +931,103 @@ export default function AdminOrdersPage() {
                           </span>
                         </td>
 
-                        {/* Actions */}
-                        <td className="py-3 px-3 text-right">
+                        {/* Actions (Update Button & More Menu) */}
+                        <td className="py-3.5 pr-4 pl-2 text-right relative">
                           <div className="flex items-center justify-end gap-1.5">
+                            {/* Update Button */}
                             <button
                               type="button"
                               onClick={() => openStatusModal(o)}
-                              className="bg-black hover:bg-neutral-800 text-white px-3 py-1.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-2xs transition-all"
+                              className="bg-neutral-900 hover:bg-neutral-800 text-white px-3.5 py-1.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-2xs transition-all"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                               <span>Update</span>
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => openStatusModal(o)}
-                              className="p-1.5 text-neutral-400 hover:text-black rounded-lg transition-colors cursor-pointer"
-                              title="More Options"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
+
+                            {/* More Options (...) Button */}
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenMenuOrderNumber(
+                                    isMenuOpen ? null : o.orderNumber
+                                  );
+                                }}
+                                className="p-1.5 text-neutral-400 hover:text-black rounded-lg transition-colors cursor-pointer"
+                                title="More Actions"
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+
+                              {/* Dropdown Action Menu */}
+                              {isMenuOpen && (
+                                <div className="absolute right-0 top-8 z-30 w-44 bg-white border border-neutral-200 rounded-2xl shadow-xl p-1.5 text-left text-xs font-medium animate-in fade-in zoom-in-95 duration-150">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setViewDetailsOrder(o);
+                                      setOpenMenuOrderNumber(null);
+                                    }}
+                                    className="w-full px-3 py-2 text-neutral-700 hover:bg-neutral-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
+                                  >
+                                    <Eye className="w-3.5 h-3.5 text-neutral-500" />
+                                    <span>View Details</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleQuickStatusUpdate(o.orderNumber, {
+                                        status: "delivered",
+                                        paymentStatus: "paid",
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 text-neutral-700 hover:bg-neutral-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>Mark Delivered</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleQuickStatusUpdate(o.orderNumber, {
+                                        status: "shipped",
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 text-neutral-700 hover:bg-neutral-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
+                                  >
+                                    <Truck className="w-3.5 h-3.5 text-indigo-600" />
+                                    <span>Mark Shipped</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleQuickStatusUpdate(o.orderNumber, {
+                                        paymentStatus: "paid",
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 text-neutral-700 hover:bg-neutral-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
+                                  >
+                                    <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>Mark Paid</span>
+                                  </button>
+
+                                  <div className="my-1 border-t border-neutral-100" />
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteOrder(o.orderNumber)}
+                                    className="w-full px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                    <span>Delete Order</span>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -917,17 +1084,17 @@ export default function AdminOrdersPage() {
         )}
       </div>
 
-      {/* ================= MODAL: UPDATE ORDER FULFILLMENT ================= */}
+      {/* ================= MODAL: UPDATE ORDER STATUS ================= */}
       {selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white border border-neutral-200 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl text-neutral-900">
+          <div className="bg-white border border-neutral-200 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl text-neutral-900 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
               <div>
                 <h3 className="text-base font-black uppercase tracking-wider text-neutral-900">
                   Update Order #{selectedOrder.orderNumber}
                 </h3>
                 <span className="text-[11px] text-neutral-500">
-                  Recipient: {selectedOrder.customer?.name || "Customer"} (
+                  Customer: {selectedOrder.customer?.name || "Customer"} (
                   {selectedOrder.customer?.phone || "N/A"})
                 </span>
               </div>
@@ -941,24 +1108,43 @@ export default function AdminOrdersPage() {
             </div>
 
             <form onSubmit={handleUpdateStatus} className="mt-5 space-y-4 text-xs">
-              <div>
-                <label className="font-bold text-neutral-700 block mb-1">
-                  Fulfillment Status
-                </label>
-                <select
-                  value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value as OrderStatus)}
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-bold focus:outline-hidden focus:border-black cursor-pointer"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="processing">Processing</option>
-                  <option value="shipped">Shipped</option>
-                  <option value="delivered">Delivered</option>
-                  <option value="cancelled">Cancelled</option>
-                  <option value="returned">Returned</option>
-                  <option value="refunded">Refunded</option>
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Fulfillment Status */}
+                <div>
+                  <label className="font-bold text-neutral-700 block mb-1">
+                    Fulfillment Status
+                  </label>
+                  <select
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value as OrderStatus)}
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-bold focus:outline-hidden focus:border-black cursor-pointer"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="processing">Processing</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="returned">Returned</option>
+                    <option value="refunded">Refunded</option>
+                  </select>
+                </div>
+
+                {/* Payment Status */}
+                <div>
+                  <label className="font-bold text-neutral-700 block mb-1">
+                    Payment Status
+                  </label>
+                  <select
+                    value={newPaymentStatus}
+                    onChange={(e) => setNewPaymentStatus(e.target.value as PaymentStatus)}
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-bold focus:outline-hidden focus:border-black cursor-pointer"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="paid">Paid</option>
+                    <option value="failed">Failed</option>
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -998,7 +1184,7 @@ export default function AdminOrdersPage() {
                 <button
                   type="submit"
                   disabled={isUpdating}
-                  className="flex-1 py-3 rounded-2xl bg-black text-white font-bold uppercase hover:bg-neutral-800 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
+                  className="flex-1 py-3 rounded-2xl bg-neutral-900 text-white font-bold uppercase hover:bg-neutral-800 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
                 >
                   {isUpdating ? "Saving..." : "Save Changes"}
                 </button>
@@ -1008,10 +1194,110 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
+      {/* ================= MODAL: VIEW ORDER DETAILS ================= */}
+      {viewDetailsOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="bg-white border border-neutral-200 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl text-neutral-900 animate-in fade-in zoom-in-95 duration-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+              <div>
+                <h3 className="text-base font-black text-neutral-900">
+                  Order #{viewDetailsOrder.orderNumber}
+                </h3>
+                <span className="text-xs text-neutral-500">
+                  Placed on {formatOrderDate(viewDetailsOrder.createdAt).date} at{" "}
+                  {formatOrderDate(viewDetailsOrder.createdAt).time}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewDetailsOrder(null)}
+                className="text-neutral-400 hover:text-black cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Customer & Address Details */}
+            <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-200/80 space-y-2 text-xs">
+              <div className="flex items-center gap-2 text-neutral-800 font-bold">
+                <User className="w-4 h-4 text-neutral-600" />
+                <span>{viewDetailsOrder.customer?.name}</span>
+              </div>
+              <div className="flex items-center gap-2 text-neutral-600">
+                <Phone className="w-4 h-4 text-neutral-400" />
+                <span>{viewDetailsOrder.customer?.phone}</span>
+                {viewDetailsOrder.customer?.email && (
+                  <>
+                    <span className="text-neutral-300">•</span>
+                    <span>{viewDetailsOrder.customer?.email}</span>
+                  </>
+                )}
+              </div>
+              <div className="flex items-start gap-2 text-neutral-600">
+                <MapPin className="w-4 h-4 text-neutral-400 shrink-0 mt-0.5" />
+                <span>
+                  {viewDetailsOrder.shippingAddress?.street},{" "}
+                  {viewDetailsOrder.shippingAddress?.city},{" "}
+                  {viewDetailsOrder.shippingAddress?.district || "Sri Lanka"}
+                </span>
+              </div>
+            </div>
+
+            {/* Items List */}
+            <div className="space-y-2 text-xs">
+              <span className="font-bold text-neutral-900 block">
+                Purchased Items ({viewDetailsOrder.items?.length || 0})
+              </span>
+              <div className="divide-y divide-neutral-100 border border-neutral-200 rounded-2xl overflow-hidden bg-white">
+                {(viewDetailsOrder.items || []).map((item, idx) => (
+                  <div key={idx} className="p-3 flex items-center justify-between gap-3">
+                    <div>
+                      <strong className="text-neutral-900 font-bold block">
+                        {item.name}
+                      </strong>
+                      <span className="text-[11px] text-neutral-500">
+                        Qty: {item.quantity || 1} • SKU: {item.sku || "N/A"}
+                      </span>
+                    </div>
+                    <span className="font-bold text-neutral-900 font-mono">
+                      Rs. {((item.price || 0) * (item.quantity || 1)).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Price Breakdown */}
+            <div className="pt-2 border-t border-neutral-100 space-y-1.5 text-xs">
+              <div className="flex justify-between text-neutral-600">
+                <span>Subtotal</span>
+                <span className="font-mono">Rs. {(viewDetailsOrder.subtotal || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-neutral-600">
+                <span>Shipping Fee</span>
+                <span className="font-mono">Rs. {(viewDetailsOrder.shippingFee || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm font-black text-neutral-900 pt-1 border-t border-neutral-100">
+                <span>Total Amount</span>
+                <span className="font-mono text-base">Rs. {(viewDetailsOrder.total || 0).toLocaleString()}</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setViewDetailsOrder(null)}
+              className="w-full py-2.5 rounded-xl bg-neutral-900 text-white font-bold text-xs uppercase hover:bg-neutral-800 transition-colors cursor-pointer"
+            >
+              Close Details
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ================= MODAL: CREATE ORDER ================= */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white border border-neutral-200 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl text-neutral-900">
+          <div className="bg-white border border-neutral-200 rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl text-neutral-900 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
               <div>
                 <h3 className="text-base font-black uppercase tracking-wider text-neutral-900">
@@ -1031,6 +1317,7 @@ export default function AdminOrdersPage() {
             </div>
 
             <form onSubmit={handleCreateOrderSubmit} className="mt-5 space-y-3.5 text-xs">
+              {/* Customer Full Name */}
               <div>
                 <label className="font-bold text-neutral-700 block mb-1">
                   Customer Full Name *
@@ -1045,6 +1332,7 @@ export default function AdminOrdersPage() {
                 />
               </div>
 
+              {/* Phone & Email */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-neutral-700 block mb-1">
@@ -1073,36 +1361,77 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="font-bold text-neutral-700 block mb-1">
-                  Delivery Address *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={createAddress}
-                  onChange={(e) => setCreateAddress(e.target.value)}
-                  placeholder="e.g. No. 45, Galle Road, Colombo 03"
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
+              {/* Delivery Address & City */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
                   <label className="font-bold text-neutral-700 block mb-1">
-                    Item / Product Name
+                    Delivery Street Address *
                   </label>
                   <input
                     type="text"
-                    value={createItemName}
-                    onChange={(e) => setCreateItemName(e.target.value)}
-                    placeholder="e.g. Waves Poncho Ash - Flower"
+                    required
+                    value={createAddress}
+                    onChange={(e) => setCreateAddress(e.target.value)}
+                    placeholder="e.g. No. 45, Galle Road"
                     className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
                   />
                 </div>
                 <div>
                   <label className="font-bold text-neutral-700 block mb-1">
-                    Total Order Value (LKR) *
+                    City *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={createCity}
+                    onChange={(e) => setCreateCity(e.target.value)}
+                    placeholder="Colombo"
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Product Catalog Picker / Custom Item */}
+              <div>
+                <label className="font-bold text-neutral-700 block mb-1">
+                  Select Product from Catalog (or enter custom)
+                </label>
+                {products.length > 0 && (
+                  <select
+                    value={selectedCatalogProduct}
+                    onChange={(e) => {
+                      setSelectedCatalogProduct(e.target.value);
+                      const prod = products.find((p) => p.name === e.target.value);
+                      if (prod) {
+                        setCreateItemName(prod.name);
+                        setCreateItemPrice(prod.price);
+                      }
+                    }}
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium mb-2"
+                  >
+                    <option value="">-- Choose from available products --</option>
+                    {products.map((p) => (
+                      <option key={p._id || p.sku} value={p.name}>
+                        {p.name} — Rs. {p.price.toLocaleString()} ({p.brand})
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <input
+                  type="text"
+                  required
+                  value={createItemName}
+                  onChange={(e) => setCreateItemName(e.target.value)}
+                  placeholder="e.g. Waves Poncho Ash - Flower"
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
+                />
+              </div>
+
+              {/* Unit Price & Quantity & Shipping Fee */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-neutral-700 block mb-1">
+                    Unit Price (Rs) *
                   </label>
                   <input
                     type="number"
@@ -1113,21 +1442,87 @@ export default function AdminOrdersPage() {
                     className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-bold font-mono"
                   />
                 </div>
+                <div>
+                  <label className="font-bold text-neutral-700 block mb-1">
+                    Quantity *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    value={createQuantity}
+                    onChange={(e) => setCreateQuantity(Number(e.target.value))}
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-neutral-700 block mb-1">
+                    Shipping (Rs)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={createShippingFee}
+                    onChange={(e) => setCreateShippingFee(Number(e.target.value))}
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-mono font-medium"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="font-bold text-neutral-700 block mb-1">
-                  Payment Method
-                </label>
-                <select
-                  value={createPaymentMethod}
-                  onChange={(e) => setCreatePaymentMethod(e.target.value)}
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-bold focus:outline-hidden focus:border-black cursor-pointer"
-                >
-                  <option value="COD">Cash on Delivery (COD)</option>
-                  <option value="Card">Online Card Payment</option>
-                  <option value="Koko">Koko / Mint Installments</option>
-                </select>
+              {/* Payment Method & Initial Status */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-neutral-700 block mb-1">
+                    Payment Method
+                  </label>
+                  <select
+                    value={createPaymentMethod}
+                    onChange={(e) => setCreatePaymentMethod(e.target.value)}
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-medium focus:outline-hidden focus:border-black cursor-pointer"
+                  >
+                    <option value="cod">Cash on Delivery (COD)</option>
+                    <option value="card">Online Card</option>
+                    <option value="koko">Koko / Mintpay</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-neutral-700 block mb-1">
+                    Payment Status
+                  </label>
+                  <select
+                    value={createPaymentStatus}
+                    onChange={(e) => setCreatePaymentStatus(e.target.value as PaymentStatus)}
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-medium focus:outline-hidden focus:border-black cursor-pointer"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="paid">Paid</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-neutral-700 block mb-1">
+                    Order Status
+                  </label>
+                  <select
+                    value={createOrderStatus}
+                    onChange={(e) => setCreateOrderStatus(e.target.value as OrderStatus)}
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-medium focus:outline-hidden focus:border-black cursor-pointer"
+                  >
+                    <option value="processing">Processing</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="delivered">Delivered</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Total Summary */}
+              <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 flex items-center justify-between text-xs">
+                <span className="font-bold text-neutral-700">Calculated Total</span>
+                <span className="font-black text-sm text-neutral-900 font-mono">
+                  Rs. {(createItemPrice * createQuantity + createShippingFee).toLocaleString()}
+                </span>
               </div>
 
               <div className="pt-4 flex gap-3 border-t border-neutral-100">
@@ -1141,7 +1536,7 @@ export default function AdminOrdersPage() {
                 <button
                   type="submit"
                   disabled={isCreatingOrder}
-                  className="flex-1 py-3 rounded-2xl bg-black text-white font-bold uppercase hover:bg-neutral-800 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
+                  className="flex-1 py-3 rounded-2xl bg-neutral-900 text-white font-bold uppercase hover:bg-neutral-800 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
                 >
                   {isCreatingOrder ? "Creating..." : "Confirm & Create"}
                 </button>

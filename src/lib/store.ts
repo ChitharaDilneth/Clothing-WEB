@@ -27,6 +27,7 @@ import {
   IReview,
   ISiteSettings,
   OrderStatus,
+  PaymentStatus,
 } from "@/types";
 
 function toPlain<T>(data: T): T {
@@ -51,7 +52,7 @@ const memoryReviews: IReview[] = JSON.parse(JSON.stringify(SEED_REVIEWS)).map(
 );
 let memorySettings: ISiteSettings = JSON.parse(JSON.stringify(SEED_SETTINGS));
 
-const memoryOrders: IOrder[] = [
+let memoryOrders: IOrder[] = [
   {
     _id: "ord_1001",
     orderNumber: "TBH-90214",
@@ -706,14 +707,16 @@ export async function updateOrderStatus(
   orderNumber: string,
   status: OrderStatus,
   trackingNumber?: string,
-  internalNotes?: string
+  internalNotes?: string,
+  paymentStatus?: PaymentStatus
 ): Promise<IOrder | null> {
   const db = await connectDB();
   if (db) {
     try {
       const updatePayload: Record<string, unknown> = { orderStatus: status };
-      if (trackingNumber) updatePayload.trackingNumber = trackingNumber;
-      if (internalNotes) updatePayload.internalNotes = internalNotes;
+      if (trackingNumber !== undefined) updatePayload.trackingNumber = trackingNumber;
+      if (internalNotes !== undefined) updatePayload.internalNotes = internalNotes;
+      if (paymentStatus !== undefined) updatePayload.paymentStatus = paymentStatus;
       const updated = await OrderModel.findOneAndUpdate({ orderNumber }, updatePayload, { new: true }).lean();
       if (updated) return { ...updated, _id: String(updated._id) } as unknown as IOrder;
     } catch (e) {
@@ -724,11 +727,31 @@ export async function updateOrderStatus(
   const order = memoryOrders.find((o) => o.orderNumber === orderNumber);
   if (order) {
     order.orderStatus = status;
-    if (trackingNumber) order.trackingNumber = trackingNumber;
-    if (internalNotes) order.internalNotes = internalNotes;
+    if (trackingNumber !== undefined) order.trackingNumber = trackingNumber;
+    if (internalNotes !== undefined) order.internalNotes = internalNotes;
+    if (paymentStatus !== undefined) order.paymentStatus = paymentStatus;
     return order;
   }
   return null;
+}
+
+export async function deleteOrder(orderNumber: string): Promise<boolean> {
+  const db = await connectDB();
+  if (db) {
+    try {
+      await OrderModel.findOneAndDelete({
+        $or: [{ orderNumber }, { _id: orderNumber }],
+      });
+      return true;
+    } catch (e) {
+      console.error("Error deleting order in MongoDB:", e);
+    }
+  }
+  const initLen = memoryOrders.length;
+  memoryOrders = memoryOrders.filter(
+    (o) => o.orderNumber !== orderNumber && o._id !== orderNumber
+  );
+  return memoryOrders.length < initLen;
 }
 
 export async function getCoupons(): Promise<ICoupon[]> {
