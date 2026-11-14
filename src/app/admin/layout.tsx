@@ -169,7 +169,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Top Floating Header Bar */}
-      <header className="sticky top-0 z-30 pt-4 pb-3">
+      <header className="fixed top-0 left-0 right-0 z-30 py-3 bg-[#eceff3]/85 backdrop-blur-md border-b border-neutral-300/40 transition-all">
         <div className="w-full max-w-[1560px] mx-auto md:pl-28 px-4 sm:px-8 flex items-center justify-between gap-4">
           {/* Left: TBH Brand Logo Capsule (Aligned with 'G' of Good morning) */}
           <div className="flex items-center gap-3">
@@ -267,7 +267,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Mobile Navigation Dropdown */}
         {mobileMenuOpen && (
-          <div className="md:hidden mt-3 max-w-[1560px] mx-auto px-4 bg-white border border-neutral-200 rounded-3xl p-4 shadow-lg flex flex-col gap-1.5">
+          <div className="md:hidden mt-3 max-w-[1560px] mx-auto px-4 bg-white border border-neutral-200 rounded-3xl p-4 shadow-lg flex flex-col gap-1.5 max-h-[calc(100vh-80px)] overflow-y-auto">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -292,7 +292,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </header>
 
       {/* Main Content Area */}
-      <div className="w-full max-w-[1560px] mx-auto md:pl-28 px-4 sm:px-8 pb-10 flex-1">
+      <div className="w-full max-w-[1560px] mx-auto md:pl-28 px-4 sm:px-8 pt-20 sm:pt-24 pb-10 flex-1">
         <main className="w-full min-w-0">{children}</main>
       </div>
     </div>
