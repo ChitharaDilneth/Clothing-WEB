@@ -64,41 +64,41 @@ export default function AdminCouponsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-black uppercase tracking-wider text-white">
+        <h1 className="text-2xl font-black uppercase tracking-wider text-neutral-900">
           Promotional Coupons
         </h1>
-        <p className="text-xs text-neutral-400 mt-0.5">
+        <p className="text-xs text-neutral-500 mt-0.5 font-medium">
           Create percentage and fixed LKR discounts for promotional campaigns.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Create Form */}
-        <div className="lg:col-span-5 bg-neutral-900 border border-neutral-800 rounded-3xl p-6 shadow-xs">
-          <h2 className="text-sm font-black uppercase tracking-wider text-white mb-4">
+        <div className="lg:col-span-5 bg-white border border-neutral-200/80 rounded-3xl p-6 shadow-[0_2px_16px_rgba(0,0,0,0.03)]">
+          <h2 className="text-sm font-black uppercase tracking-wider text-neutral-900 mb-4">
             Create Discount Code
           </h2>
 
           <form onSubmit={handleCreateCoupon} className="space-y-4 text-xs">
             <div>
-              <label className="font-bold text-neutral-300 block mb-1">Coupon Code *</label>
+              <label className="font-bold text-neutral-700 block mb-1">Coupon Code *</label>
               <input
                 type="text"
                 required
                 placeholder="e.g. SUMMER25"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white font-mono uppercase focus:outline-hidden"
+                className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl p-3 text-neutral-900 font-mono uppercase focus:outline-hidden focus:border-black font-bold"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="font-bold text-neutral-300 block mb-1">Type</label>
+                <label className="font-bold text-neutral-700 block mb-1">Type</label>
                 <select
                   value={discountType}
                   onChange={(e) => setDiscountType(e.target.value as any)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white focus:outline-hidden cursor-pointer"
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl p-3 text-neutral-900 focus:outline-hidden focus:border-black cursor-pointer font-medium"
                 >
                   <option value="percentage">Percentage (%)</option>
                   <option value="fixed">Fixed (LKR)</option>
@@ -106,77 +106,86 @@ export default function AdminCouponsPage() {
               </div>
 
               <div>
-                <label className="font-bold text-neutral-300 block mb-1">Discount Value</label>
+                <label className="font-bold text-neutral-700 block mb-1">Discount Value</label>
                 <input
                   type="number"
                   required
                   value={discountValue}
                   onChange={(e) => setDiscountValue(Number(e.target.value))}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white font-bold focus:outline-hidden"
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl p-3 text-neutral-900 font-bold focus:outline-hidden focus:border-black"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="font-bold text-neutral-300 block mb-1">Min Order Value</label>
+                <label className="font-bold text-neutral-700 block mb-1">Min Order Value</label>
                 <input
                   type="number"
                   value={minOrderValue}
                   onChange={(e) => setMinOrderValue(Number(e.target.value))}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white focus:outline-hidden"
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl p-3 text-neutral-900 focus:outline-hidden focus:border-black"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-neutral-300 block mb-1">Max Cap (LKR)</label>
+                <label className="font-bold text-neutral-700 block mb-1">Max Cap (LKR)</label>
                 <input
                   type="number"
                   value={maxDiscount}
                   onChange={(e) => setMaxDiscount(Number(e.target.value))}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white focus:outline-hidden"
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl p-3 text-neutral-900 focus:outline-hidden focus:border-black"
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-white text-black py-3 rounded-xl font-black uppercase tracking-wider hover:bg-neutral-200 transition-colors shadow-xs"
+              className="w-full bg-black hover:bg-neutral-800 text-white font-bold py-3.5 rounded-2xl uppercase tracking-wider text-xs transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-2"
             >
-              Publish Coupon
+              <Plus className="w-4 h-4" />
+              <span>Create Coupon</span>
             </button>
           </form>
         </div>
 
-        {/* Existing Coupons List */}
-        <div className="lg:col-span-7 bg-neutral-900 border border-neutral-800 rounded-3xl p-6 shadow-xs">
-          <h2 className="text-sm font-black uppercase tracking-wider text-white mb-4">
-            Active Store Coupons ({coupons.length})
+        {/* Existing Coupons Table */}
+        <div className="lg:col-span-7 bg-white border border-neutral-200/80 rounded-3xl p-6 shadow-[0_2px_16px_rgba(0,0,0,0.03)]">
+          <h2 className="text-sm font-black uppercase tracking-wider text-neutral-900 mb-4">
+            Active Discount Codes ({coupons.length})
           </h2>
 
-          <div className="divide-y divide-neutral-800 text-xs">
-            {coupons.map((c) => (
-              <div key={c._id || c.code} className="py-3.5 flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-black text-white text-sm bg-neutral-950 px-2.5 py-0.5 rounded-lg border border-neutral-800">
-                      {c.code}
-                    </span>
-                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-800">
-                      Active
+          <div className="space-y-3">
+            {loading ? (
+              <div className="text-xs text-neutral-400 py-6 text-center">Loading coupons...</div>
+            ) : coupons.length === 0 ? (
+              <div className="text-xs text-neutral-400 py-6 text-center">No active coupons found.</div>
+            ) : (
+              coupons.map((c) => (
+                <div
+                  key={c.code}
+                  className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80 flex items-center justify-between"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <strong className="text-neutral-900 font-mono text-sm tracking-wider font-black">
+                        {c.code}
+                      </strong>
+                      <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black uppercase px-2 py-0.5 rounded-full">
+                        {c.discountType === "percentage" ? `${c.discountValue}% OFF` : `Rs. ${c.discountValue} OFF`}
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-neutral-500 block mt-1">
+                      Min spend: Rs. {c.minOrderValue?.toLocaleString()} • Max cap: Rs. {c.maxDiscount?.toLocaleString()}
                     </span>
                   </div>
-                  <div className="text-[11px] text-neutral-400 mt-1">
-                    {c.discountType === "percentage" ? `${c.discountValue}% Off` : `Rs. ${c.discountValue} Off`}
-                    {c.minOrderValue && ` • Min order Rs. ${c.minOrderValue.toLocaleString()}`}
-                  </div>
-                </div>
 
-                <div className="text-right">
-                  <span className="font-bold text-white text-xs block">{c.usedCount || 0} Redemptions</span>
+                  <span className="text-[10px] font-bold text-neutral-400 bg-white border border-neutral-200 px-2.5 py-1 rounded-full">
+                    Active
+                  </span>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

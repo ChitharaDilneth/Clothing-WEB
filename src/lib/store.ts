@@ -43,15 +43,15 @@ let memoryCategories: ICategory[] = JSON.parse(JSON.stringify(SEED_CATEGORIES)).
 let memoryBrands: IBrand[] = JSON.parse(JSON.stringify(SEED_BRANDS)).map(
   (b: IBrand, idx: number) => ({ ...b, _id: `brand_${idx + 1}` })
 );
-let memoryBanners: IBanner[] = JSON.parse(JSON.stringify(SEED_BANNERS)).map(
+const memoryBanners: IBanner[] = JSON.parse(JSON.stringify(SEED_BANNERS)).map(
   (b: IBanner, idx: number) => ({ ...b, _id: `banner_${idx + 1}` })
 );
-let memoryReviews: IReview[] = JSON.parse(JSON.stringify(SEED_REVIEWS)).map(
+const memoryReviews: IReview[] = JSON.parse(JSON.stringify(SEED_REVIEWS)).map(
   (r: IReview, idx: number) => ({ ...r, _id: `rev_${idx + 1}` })
 );
 let memorySettings: ISiteSettings = JSON.parse(JSON.stringify(SEED_SETTINGS));
 
-let memoryOrders: IOrder[] = [
+const memoryOrders: IOrder[] = [
   {
     _id: "ord_1001",
     orderNumber: "TBH-90214",
@@ -135,7 +135,7 @@ let memoryOrders: IOrder[] = [
   },
 ];
 
-let memoryCoupons: ICoupon[] = [
+const memoryCoupons: ICoupon[] = [
   {
     _id: "coup_1",
     code: "TBH15",
@@ -177,7 +177,7 @@ interface CustomOrderRecord {
   createdAt: string;
 }
 
-let memoryCustomOrders: CustomOrderRecord[] = [
+const memoryCustomOrders: CustomOrderRecord[] = [
   {
     _id: "co_1",
     orderNumber: "CUST-WAVES-01",

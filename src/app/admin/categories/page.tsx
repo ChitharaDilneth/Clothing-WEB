@@ -257,19 +257,19 @@ export default function AdminCategoriesPage() {
   return (
     <div className="space-y-8 pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-neutral-900/60 p-6 rounded-3xl border border-neutral-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-neutral-200/80 shadow-[0_2px_16px_rgba(0,0,0,0.03)]">
         <div>
-          <h1 className="text-2xl font-black uppercase tracking-wider text-white">
+          <h1 className="text-2xl font-black uppercase tracking-wider text-neutral-900">
             Category &amp; Taxonomy Management
           </h1>
-          <p className="text-xs text-neutral-400 mt-1">
+          <p className="text-xs text-neutral-500 mt-1 font-medium">
             Organize products by category, inspect products inside each category, and manage official brands.
           </p>
         </div>
 
         <Link
           href="/admin/products"
-          className="bg-white text-black px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-neutral-200 transition-colors flex items-center gap-2 self-start md:self-auto"
+          className="bg-black text-white hover:bg-neutral-800 px-5 py-2.5 rounded-2xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 self-start md:self-auto shadow-xs"
         >
           <Package className="w-4 h-4" />
           <span>All Products ({products.length})</span>
@@ -279,14 +279,14 @@ export default function AdminCategoriesPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Categories Section (Spans 2 cols) */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 shadow-xs space-y-6">
-            <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
+          <div className="bg-white border border-neutral-200/80 rounded-3xl p-6 shadow-[0_2px_16px_rgba(0,0,0,0.03)] space-y-6">
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
               <div>
-                <h2 className="text-base font-black uppercase tracking-wider text-white flex items-center gap-2">
-                  <FolderOpen className="w-4 h-4 text-emerald-400" />
+                <h2 className="text-base font-black uppercase tracking-wider text-neutral-900 flex items-center gap-2">
+                  <FolderOpen className="w-4 h-4 text-black" />
                   <span>Categories ({categories.length})</span>
                 </h2>
-                <p className="text-xs text-neutral-400 mt-0.5">
+                <p className="text-xs text-neutral-500 mt-0.5">
                   Click any category below to inspect and manage the products inside it.
                 </p>
               </div>
@@ -295,9 +295,9 @@ export default function AdminCategoriesPage() {
             {/* Add Category Form */}
             <form
               onSubmit={handleAddCategory}
-              className="space-y-3 bg-neutral-950 p-4 sm:p-5 rounded-2xl border border-neutral-800 text-xs"
+              className="space-y-3 bg-neutral-50 p-4 sm:p-5 rounded-2xl border border-neutral-200 text-xs"
             >
-              <span className="font-black text-white text-xs uppercase tracking-wider block">
+              <span className="font-bold text-neutral-900 text-xs uppercase tracking-wider block">
                 + Create New Category
               </span>
 
@@ -308,14 +308,14 @@ export default function AdminCategoriesPage() {
                   placeholder="Category Name (e.g. Resort Wear)"
                   value={newCatName}
                   onChange={(e) => setNewCatName(e.target.value)}
-                  className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-2.5 text-white focus:outline-hidden"
+                  className="w-full bg-white border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
                 />
                 <input
                   type="text"
                   placeholder="Short Description..."
                   value={newCatDesc}
                   onChange={(e) => setNewCatDesc(e.target.value)}
-                  className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-2.5 text-white focus:outline-hidden"
+                  className="w-full bg-white border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
                 />
               </div>
 
@@ -326,9 +326,9 @@ export default function AdminCategoriesPage() {
                   placeholder="Optional Banner / Thumbnail URL (or upload to Cloudinary)..."
                   value={newCatImage}
                   onChange={(e) => setNewCatImage(e.target.value)}
-                  className="flex-1 bg-neutral-900 border border-neutral-800 rounded-xl p-2.5 text-white text-xs focus:outline-hidden"
+                  className="flex-1 bg-white border border-neutral-200 rounded-xl p-2.5 text-neutral-900 text-xs focus:outline-hidden focus:border-black font-medium"
                 />
-                <label className="bg-neutral-800 hover:bg-neutral-700 text-white px-3 py-2.5 rounded-xl cursor-pointer text-xs font-bold flex items-center gap-1.5 shrink-0">
+                <label className="bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border border-neutral-200 px-3 py-2.5 rounded-xl cursor-pointer text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors">
                   <Upload className="w-3.5 h-3.5" />
                   <span>{isUploadingCat ? "Uploading..." : "Upload"}</span>
                   <input
@@ -343,7 +343,7 @@ export default function AdminCategoriesPage() {
 
               <button
                 type="submit"
-                className="w-full bg-white text-black py-2.5 rounded-xl font-black uppercase tracking-wider hover:bg-neutral-200 transition-colors shadow-sm"
+                className="w-full bg-black text-white hover:bg-neutral-800 py-2.5 rounded-xl font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
               >
                 Create Category
               </button>
@@ -352,9 +352,9 @@ export default function AdminCategoriesPage() {
             {/* Categories List with Nested Products Accordion */}
             <div className="space-y-3">
               {loading ? (
-                <p className="text-center py-8 text-neutral-500 text-xs">Loading categories...</p>
+                <p className="text-center py-8 text-neutral-400 text-xs">Loading categories...</p>
               ) : categories.length === 0 ? (
-                <p className="text-center py-8 text-neutral-500 text-xs">No categories created yet.</p>
+                <p className="text-center py-8 text-neutral-400 text-xs">No categories created yet.</p>
               ) : (
                 categories.map((c) => {
                   const catId = c._id || c.slug;
@@ -364,7 +364,7 @@ export default function AdminCategoriesPage() {
                   return (
                     <div
                       key={catId}
-                      className="bg-neutral-950 border border-neutral-800/80 rounded-2xl overflow-hidden transition-all"
+                      className="bg-neutral-50 border border-neutral-200/90 rounded-2xl overflow-hidden transition-all shadow-xs"
                     >
                       {/* Main Category Header Row */}
                       <div className="p-4 flex items-center justify-between gap-4">
@@ -372,11 +372,11 @@ export default function AdminCategoriesPage() {
                           className="flex items-center gap-3 cursor-pointer flex-1 min-w-0"
                           onClick={() => toggleExpand(catId)}
                         >
-                          <div className="w-10 h-10 rounded-xl bg-neutral-900 overflow-hidden relative shrink-0 border border-neutral-800">
+                          <div className="w-10 h-10 rounded-xl bg-white overflow-hidden relative shrink-0 border border-neutral-200">
                             {c.image ? (
                               <Image src={c.image} alt={c.name} fill className="object-cover" sizes="40px" />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-neutral-600">
+                              <div className="w-full h-full flex items-center justify-center text-neutral-400">
                                 <Layers className="w-4 h-4" />
                               </div>
                             )}
@@ -384,12 +384,12 @@ export default function AdminCategoriesPage() {
 
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <strong className="text-white text-sm font-bold truncate">{c.name}</strong>
-                              <span className="bg-neutral-800 text-neutral-300 text-[10px] font-bold px-2 py-0.5 rounded-full font-mono">
+                              <strong className="text-neutral-900 text-sm font-bold truncate">{c.name}</strong>
+                              <span className="bg-white border border-neutral-200 text-neutral-700 text-[10px] font-bold px-2 py-0.5 rounded-full font-mono shadow-xs">
                                 {catProducts.length} items
                               </span>
                             </div>
-                            <span className="text-[10px] text-neutral-500 font-mono block">
+                            <span className="text-[10px] text-neutral-400 font-mono block">
                               /category/{c.slug}
                             </span>
                           </div>
@@ -400,7 +400,7 @@ export default function AdminCategoriesPage() {
                           <button
                             type="button"
                             onClick={() => toggleExpand(catId)}
-                            className="px-2.5 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 text-xs font-bold flex items-center gap-1"
+                            className="px-2.5 py-1.5 rounded-xl bg-white border border-neutral-200 hover:bg-neutral-100 text-neutral-700 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
                           >
                             <span>{isExpanded ? "Hide Items" : "View Items"}</span>
                             {isExpanded ? (
@@ -413,7 +413,7 @@ export default function AdminCategoriesPage() {
                           <button
                             type="button"
                             onClick={() => openEditCategory(c)}
-                            className="p-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300"
+                            className="p-1.5 rounded-xl bg-white border border-neutral-200 hover:bg-neutral-100 text-neutral-700 cursor-pointer shadow-xs"
                             title="Edit Category"
                           >
                             <Edit className="w-3.5 h-3.5" />
@@ -422,7 +422,7 @@ export default function AdminCategoriesPage() {
                           <button
                             type="button"
                             onClick={() => handleDeleteCategory(catId, c.name)}
-                            className="p-1.5 rounded-xl bg-neutral-900 hover:bg-red-950 text-neutral-500 hover:text-red-400"
+                            className="p-1.5 rounded-xl bg-white border border-neutral-200 hover:bg-red-50 text-neutral-700 hover:text-red-600 cursor-pointer shadow-xs"
                             title="Delete Category"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -432,14 +432,14 @@ export default function AdminCategoriesPage() {
 
                       {/* Accordion Content: Products Inside This Category */}
                       {isExpanded && (
-                        <div className="border-t border-neutral-800 bg-neutral-900/50 p-4 space-y-3">
+                        <div className="border-t border-neutral-200 bg-white p-4 space-y-3">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="font-bold text-neutral-300 uppercase tracking-wider text-[11px]">
+                            <span className="font-bold text-neutral-700 uppercase tracking-wider text-[11px]">
                               Products in &quot;{c.name}&quot; ({catProducts.length})
                             </span>
                             <Link
                               href="/admin/products"
-                              className="text-white hover:underline text-[11px] font-bold flex items-center gap-1"
+                              className="text-black hover:underline text-[11px] font-bold flex items-center gap-1"
                             >
                               <span>Manage in Products catalog</span>
                               <ArrowRight className="w-3 h-3" />
@@ -447,11 +447,11 @@ export default function AdminCategoriesPage() {
                           </div>
 
                           {catProducts.length === 0 ? (
-                            <div className="text-center py-6 bg-neutral-950 rounded-xl border border-neutral-800/60 text-neutral-500 text-xs">
+                            <div className="text-center py-6 bg-neutral-50 rounded-xl border border-neutral-200 text-neutral-400 text-xs">
                               <p>No products currently added to this category.</p>
                               <Link
                                 href="/admin/products"
-                                className="inline-block mt-2 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-[11px]"
+                                className="inline-block mt-2 px-3 py-1.5 rounded-xl bg-black text-white hover:bg-neutral-800 font-bold text-[11px] shadow-xs"
                               >
                                 + Add product to {c.name}
                               </Link>
@@ -461,10 +461,10 @@ export default function AdminCategoriesPage() {
                               {catProducts.map((p) => (
                                 <div
                                   key={p._id || p.sku}
-                                  className="bg-neutral-950 p-2.5 rounded-xl border border-neutral-800 flex items-center justify-between gap-3 text-xs"
+                                  className="bg-neutral-50 p-2.5 rounded-xl border border-neutral-200 flex items-center justify-between gap-3 text-xs"
                                 >
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    <div className="w-9 h-11 rounded-lg bg-neutral-900 overflow-hidden relative shrink-0">
+                                    <div className="w-9 h-11 rounded-lg bg-white overflow-hidden relative shrink-0 border border-neutral-200">
                                       {p.images?.[0]?.url && (
                                         <Image
                                           src={p.images[0].url}
@@ -476,10 +476,10 @@ export default function AdminCategoriesPage() {
                                       )}
                                     </div>
                                     <div className="min-w-0">
-                                      <strong className="text-white block font-bold truncate">
+                                      <strong className="text-neutral-900 block font-bold truncate">
                                         {p.name}
                                       </strong>
-                                      <span className="text-[10px] text-neutral-400">
+                                      <span className="text-[10px] text-neutral-500">
                                         Rs. {p.price.toLocaleString()} • {p.stock} units
                                       </span>
                                     </div>
@@ -488,7 +488,7 @@ export default function AdminCategoriesPage() {
                                   <Link
                                     href={`/product/${p.slug}`}
                                     target="_blank"
-                                    className="p-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white shrink-0"
+                                    className="p-1.5 rounded-lg bg-white border border-neutral-200 hover:bg-neutral-100 text-neutral-600 hover:text-black shrink-0"
                                     title="View Live"
                                   >
                                     <ExternalLink className="w-3.5 h-3.5" />
@@ -509,19 +509,19 @@ export default function AdminCategoriesPage() {
 
         {/* Brands Section (1 col) */}
         <div className="space-y-6">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 shadow-xs space-y-6">
-            <div className="border-b border-neutral-800 pb-4">
-              <h2 className="text-base font-black uppercase tracking-wider text-white">
+          <div className="bg-white border border-neutral-200/80 rounded-3xl p-6 shadow-[0_2px_16px_rgba(0,0,0,0.03)] space-y-6">
+            <div className="border-b border-neutral-100 pb-4">
+              <h2 className="text-base font-black uppercase tracking-wider text-neutral-900">
                 Official Brands ({brands.length})
               </h2>
-              <p className="text-xs text-neutral-400 mt-0.5">
+              <p className="text-xs text-neutral-500 mt-0.5">
                 Licensed brand identities for storefront tagging.
               </p>
             </div>
 
             {/* Add Brand Form */}
-            <form onSubmit={handleAddBrand} className="space-y-3 bg-neutral-950 p-4 rounded-2xl border border-neutral-800 text-xs">
-              <span className="font-bold text-white block uppercase tracking-wider">
+            <form onSubmit={handleAddBrand} className="space-y-3 bg-neutral-50 p-4 rounded-2xl border border-neutral-200 text-xs">
+              <span className="font-bold text-neutral-900 block uppercase tracking-wider">
                 + Add New Brand
               </span>
               <input
@@ -530,25 +530,25 @@ export default function AdminCategoriesPage() {
                 placeholder="Brand Name (e.g. BREAKWATER)"
                 value={newBrandName}
                 onChange={(e) => setNewBrandName(e.target.value.toUpperCase())}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-2.5 text-white focus:outline-hidden uppercase"
+                className="w-full bg-white border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black uppercase font-bold"
               />
               <input
                 type="text"
                 placeholder="Tagline or Description..."
                 value={newBrandDesc}
                 onChange={(e) => setNewBrandDesc(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-2.5 text-white focus:outline-hidden"
+                className="w-full bg-white border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
               />
               <button
                 type="submit"
-                className="w-full bg-white text-black py-2.5 rounded-xl font-bold uppercase tracking-wider hover:bg-neutral-200 transition-colors"
+                className="w-full bg-black text-white hover:bg-neutral-800 py-2.5 rounded-xl font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
               >
                 Add Brand
               </button>
             </form>
 
             {/* Brands List */}
-            <div className="divide-y divide-neutral-800 max-h-[460px] overflow-y-auto">
+            <div className="divide-y divide-neutral-100 max-h-[460px] overflow-y-auto">
               {brands.map((b) => {
                 const brandId = b._id || b.slug;
                 const brandProducts = productsByBrand[b.name.toLowerCase()] || [];
@@ -557,17 +557,17 @@ export default function AdminCategoriesPage() {
                   <div key={brandId} className="py-3 flex items-center justify-between text-xs">
                     <div>
                       <div className="flex items-center gap-2">
-                        <strong className="text-white block font-bold uppercase">{b.name}</strong>
-                        <span className="text-[10px] text-neutral-400 font-mono bg-neutral-800 px-1.5 py-0.2 rounded">
+                        <strong className="text-neutral-900 block font-bold uppercase">{b.name}</strong>
+                        <span className="text-[10px] text-neutral-500 font-mono bg-neutral-100 px-1.5 py-0.2 rounded">
                           {brandProducts.length} items
                         </span>
                       </div>
-                      <span className="text-[10px] text-neutral-500 font-mono">Slug: {b.slug}</span>
+                      <span className="text-[10px] text-neutral-400 font-mono">Slug: {b.slug}</span>
                     </div>
 
                     <button
                       onClick={() => handleDeleteBrand(brandId, b.name)}
-                      className="p-1.5 rounded-lg text-neutral-500 hover:text-red-400"
+                      className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500 transition-colors cursor-pointer"
                       title="Delete Brand"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -582,15 +582,15 @@ export default function AdminCategoriesPage() {
 
       {/* Edit Category Modal */}
       {editingCategory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-md w-full p-6 shadow-2xl text-neutral-200">
-            <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
-              <h3 className="text-sm font-black uppercase tracking-wider text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="bg-white border border-neutral-200 rounded-3xl max-w-md w-full p-6 shadow-2xl text-neutral-900">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+              <h3 className="text-sm font-black uppercase tracking-wider text-neutral-900">
                 Edit Category: {editingCategory.name}
               </h3>
               <button
                 onClick={() => setEditingCategory(null)}
-                className="text-neutral-400 hover:text-white"
+                className="text-neutral-400 hover:text-black cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -598,36 +598,36 @@ export default function AdminCategoriesPage() {
 
             <form onSubmit={handleSaveEditCategory} className="mt-4 space-y-3 text-xs">
               <div>
-                <label className="font-bold text-neutral-300 block mb-1">Category Name *</label>
+                <label className="font-bold text-neutral-700 block mb-1">Category Name *</label>
                 <input
                   type="text"
                   required
                   value={editCatName}
                   onChange={(e) => setEditCatName(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white focus:outline-hidden"
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-bold"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-neutral-300 block mb-1">Description</label>
+                <label className="font-bold text-neutral-700 block mb-1">Description</label>
                 <input
                   type="text"
                   value={editCatDesc}
                   onChange={(e) => setEditCatDesc(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white focus:outline-hidden"
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-neutral-300 block mb-1">Banner / Image URL</label>
+                <label className="font-bold text-neutral-700 block mb-1">Banner / Image URL</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={editCatImage}
                     onChange={(e) => setEditCatImage(e.target.value)}
-                    className="flex-1 bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white text-xs focus:outline-hidden"
+                    className="flex-1 bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 text-xs focus:outline-hidden focus:border-black"
                   />
-                  <label className="bg-neutral-800 hover:bg-neutral-700 text-white px-3 py-2.5 rounded-xl cursor-pointer text-xs font-bold flex items-center gap-1 shrink-0">
+                  <label className="bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border border-neutral-200 px-3 py-2.5 rounded-xl cursor-pointer text-xs font-bold flex items-center gap-1 shrink-0 transition-colors">
                     <Upload className="w-3.5 h-3.5" />
                     <input
                       type="file"
@@ -639,17 +639,17 @@ export default function AdminCategoriesPage() {
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-3 border-t border-neutral-800 mt-4">
+              <div className="flex gap-2 pt-3 border-t border-neutral-100 mt-4">
                 <button
                   type="button"
                   onClick={() => setEditingCategory(null)}
-                  className="flex-1 py-2.5 rounded-xl border border-neutral-800 text-neutral-400 font-bold uppercase hover:bg-neutral-800"
+                  className="flex-1 py-2.5 rounded-xl border border-neutral-200 text-neutral-700 font-bold uppercase hover:bg-neutral-100 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-white text-black font-black uppercase hover:bg-neutral-200"
+                  className="flex-1 py-2.5 rounded-xl bg-black text-white hover:bg-neutral-800 font-bold uppercase cursor-pointer shadow-xs"
                 >
                   Save Changes
                 </button>

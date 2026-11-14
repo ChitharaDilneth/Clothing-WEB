@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { Sparkles, Check, X, Phone, Mail } from "lucide-react";
+import { Sparkles, Check, X, Phone, Mail, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminCustomOrdersPage() {
@@ -29,18 +29,18 @@ export default function AdminCustomOrdersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-black uppercase tracking-wider text-white">
+        <h1 className="text-2xl font-black uppercase tracking-wider text-neutral-900">
           Make Your Own Waves Requests ({orders.length})
         </h1>
-        <p className="text-xs text-neutral-400 mt-0.5">
+        <p className="text-xs text-neutral-500 mt-0.5 font-medium">
           Review customized sandal monograms, artwork uploads, and artisan production requests.
         </p>
       </div>
 
-      <div className="bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden shadow-xs">
+      <div className="bg-white border border-neutral-200/80 rounded-3xl overflow-hidden shadow-[0_2px_16px_rgba(0,0,0,0.03)]">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-neutral-300">
-            <thead className="bg-black text-[10px] uppercase font-bold text-neutral-400 border-b border-neutral-800">
+          <table className="w-full text-left text-xs text-neutral-700">
+            <thead className="bg-neutral-50 text-[10px] uppercase font-bold text-neutral-500 border-b border-neutral-200">
               <tr>
                 <th className="py-3 px-4">Ref #</th>
                 <th className="py-3 px-4">Customer</th>
@@ -51,34 +51,34 @@ export default function AdminCustomOrdersPage() {
                 <th className="py-3 px-4">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-800/80 font-medium">
+            <tbody className="divide-y divide-neutral-100 font-medium">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-neutral-500">
+                  <td colSpan={7} className="py-8 text-center text-neutral-400">
                     Loading custom orders...
                   </td>
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-neutral-500">
+                  <td colSpan={7} className="py-8 text-center text-neutral-400">
                     No custom orders submitted yet.
                   </td>
                 </tr>
               ) : (
                 orders.map((o) => (
-                  <tr key={o._id || o.orderNumber} className="hover:bg-neutral-800/30">
-                    <td className="py-3 px-4 font-mono font-bold text-white">{o.orderNumber}</td>
+                  <tr key={o._id || o.orderNumber} className="hover:bg-neutral-50/70 transition-colors">
+                    <td className="py-3 px-4 font-mono font-bold text-neutral-900">{o.orderNumber}</td>
                     <td className="py-3 px-4">
-                      <strong className="text-white block font-bold">{o.customerName}</strong>
-                      <span className="text-[11px] text-neutral-400">{o.customerPhone}</span>
+                      <strong className="text-neutral-900 block font-bold">{o.customerName}</strong>
+                      <span className="text-[11px] text-neutral-500">{o.customerPhone}</span>
                     </td>
-                    <td className="py-3 px-4 text-white font-medium">{o.baseProductName}</td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4 text-neutral-900 font-medium">{o.baseProductName}</td>
+                    <td className="py-3 px-4 text-neutral-600">
                       {o.color} • Size {o.size}
                     </td>
                     <td className="py-3 px-4">
                       {o.customText && (
-                        <span className="bg-neutral-950 px-2 py-0.5 rounded border border-neutral-800 font-bold uppercase text-amber-400 text-[10px] inline-block mr-2">
+                        <span className="bg-neutral-100 px-2.5 py-1 rounded-lg border border-neutral-200 font-bold uppercase text-neutral-900 text-[10px] inline-block mr-2">
                           &ldquo;{o.customText}&rdquo;
                         </span>
                       )}
@@ -87,17 +87,18 @@ export default function AdminCustomOrdersPage() {
                           href={o.artworkUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-blue-400 underline text-[11px]"
+                          className="text-black underline font-bold text-[11px] inline-flex items-center gap-1"
                         >
-                          View Graphic
+                          <span>View Graphic</span>
+                          <ExternalLink className="w-3 h-3" />
                         </a>
                       )}
                     </td>
-                    <td className="py-3 px-4 font-black text-white">
+                    <td className="py-3 px-4 font-black text-neutral-900">
                       Rs. {o.price?.toLocaleString()}
                     </td>
                     <td className="py-3 px-4">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-950 text-emerald-400 border border-emerald-800">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
                         {o.status}
                       </span>
                     </td>
