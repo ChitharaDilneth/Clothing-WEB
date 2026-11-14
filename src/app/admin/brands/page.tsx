@@ -42,6 +42,8 @@ export default function AdminBrandsPage() {
   const [story, setStory] = useState("");
   const [phone, setPhone] = useState("+94 76 347 3075");
   const [email, setEmail] = useState("");
+  const [managerUsername, setManagerUsername] = useState("");
+  const [managerPassword, setManagerPassword] = useState("");
   const [sortOrder, setSortOrder] = useState<number>(0);
   const [isActive, setIsActive] = useState(true);
   const [featured, setFeatured] = useState(false);
@@ -83,6 +85,8 @@ export default function AdminBrandsPage() {
     setStory("");
     setPhone("+94 76 347 3075");
     setEmail("");
+    setManagerUsername("");
+    setManagerPassword("");
     setSortOrder(brands.length + 1);
     setIsActive(true);
     setFeatured(false);
@@ -100,6 +104,8 @@ export default function AdminBrandsPage() {
     setStory(b.story || "");
     setPhone(b.phone || "+94 76 347 3075");
     setEmail(b.email || "");
+    setManagerUsername(b.managerUsername || b.slug);
+    setManagerPassword("");
     setSortOrder(b.sortOrder || 0);
     setIsActive(b.isActive);
     setFeatured(Boolean(b.featured));
@@ -127,7 +133,7 @@ export default function AdminBrandsPage() {
 
     setIsSubmitting(true);
     try {
-      const brandPayload: Partial<IBrand> = {
+      const brandPayload: Partial<IBrand> & { managerPassword?: string } = {
         name: name.trim(),
         slug: slug.trim().toLowerCase(),
         tagline: tagline.trim(),
@@ -137,6 +143,8 @@ export default function AdminBrandsPage() {
         story: story.trim(),
         phone: phone.trim(),
         email: email.trim(),
+        managerUsername: managerUsername.trim().toLowerCase() || slug.trim().toLowerCase(),
+        ...(managerPassword.trim() ? { managerPassword: managerPassword.trim() } : {}),
         sortOrder: Number(sortOrder),
         isActive,
         featured,
@@ -361,6 +369,17 @@ export default function AdminBrandsPage() {
                     <p className="text-[11px] text-neutral-400 line-clamp-2 leading-relaxed">
                       {b.description || "No description configured yet."}
                     </p>
+
+                    {/* Brand Manager Login Pill */}
+                    <div className="pt-1 flex items-center justify-between text-[10px] bg-neutral-950/80 px-2.5 py-1.5 rounded-lg border border-neutral-800">
+                      <span className="text-neutral-400 flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                        <span>Manager Login:</span>
+                      </span>
+                      <span className="font-mono font-bold text-amber-400">
+                        @{b.managerUsername || b.slug}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -533,6 +552,45 @@ export default function AdminBrandsPage() {
                     placeholder="partner@thebrandhub.lk"
                     className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2.5 text-white focus:outline-hidden focus:border-white"
                   />
+                </div>
+              </div>
+
+              {/* Brand Manager Login Credentials Configuration */}
+              <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-amber-400" />
+                  <span className="font-extrabold text-white text-xs uppercase tracking-wider">
+                    Brand Partner Login Credentials
+                  </span>
+                </div>
+                <p className="text-[11px] text-neutral-400 leading-relaxed">
+                  Assign a dedicated username and password to this brand partner. They can log in at <code>/admin/login</code> to independently manage their own brand&apos;s catalog, stock, and storefront.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="font-extrabold uppercase tracking-wider text-neutral-300 block mb-1 text-[10px]">
+                      Brand Manager Username *
+                    </label>
+                    <input
+                      type="text"
+                      value={managerUsername}
+                      onChange={(e) => setManagerUsername(e.target.value.toLowerCase())}
+                      placeholder="e.g. waves or ansel"
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-hidden focus:border-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-extrabold uppercase tracking-wider text-neutral-300 block mb-1 text-[10px]">
+                      {editingBrand ? "Change Password (optional)" : "Brand Login Password *"}
+                    </label>
+                    <input
+                      type="password"
+                      value={managerPassword}
+                      onChange={(e) => setManagerPassword(e.target.value)}
+                      placeholder={editingBrand ? "Leave blank to keep existing" : "••••••••••••"}
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-hidden focus:border-white"
+                    />
+                  </div>
                 </div>
               </div>
 

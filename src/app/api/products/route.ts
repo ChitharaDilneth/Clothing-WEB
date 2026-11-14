@@ -39,13 +39,28 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();
-    if (!user || (user.role !== "superadmin" && user.role !== "admin" && user.role !== "product_manager")) {
-      return NextResponse.json({ message: "Unauthorized. Admin access required." }, { status: 403 });
+    const isAllowed =
+      user &&
+      (user.role === "superadmin" ||
+        user.role === "admin" ||
+        user.role === "product_manager" ||
+        user.role === "brand_manager" ||
+        user.role === "vendor");
+
+    if (!isAllowed) {
+      return NextResponse.json({ message: "Unauthorized. Admin or Brand Manager access required." }, { status: 403 });
     }
 
     const body = await req.json();
     if (!body.name || !body.price) {
       return NextResponse.json({ message: "Product name and price are required" }, { status: 400 });
+    }
+
+    // If Brand Manager, lock the product's brand to their assigned brand
+    if (user.role === "brand_manager" || user.role === "vendor") {
+      if (user.brandSlug) {
+        body.brand = user.brandSlug.toUpperCase();
+      }
     }
 
     const created = await createProduct(body);

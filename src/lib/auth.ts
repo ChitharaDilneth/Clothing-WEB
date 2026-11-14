@@ -63,3 +63,30 @@ export const DEFAULT_ADMIN: IUser & { username: string } = {
   role: "superadmin",
   phone: "+94763473075",
 };
+
+export const DEFAULT_BRAND_MANAGERS: Record<
+  string,
+  { username: string; password: string; name: string; brandSlug: string; email: string }
+> = {
+  waves: {
+    username: "waves",
+    password: process.env.BRAND_WAVES_PASSWORD || "waves123456",
+    name: "WAVES Official Store Manager",
+    brandSlug: "waves",
+    email: "waves@thebrandhub.lk",
+  },
+  ansel: {
+    username: "ansel",
+    password: process.env.BRAND_ANSEL_PASSWORD || "ansel123456",
+    name: "ANSEL Footwear Manager",
+    brandSlug: "ansel",
+    email: "ansel@thebrandhub.lk",
+  },
+  breakwater: {
+    username: "breakwater",
+    password: process.env.BRAND_BREAKWATER_PASSWORD || "breakwater123456",
+    name: "BREAKWATER Brand Manager",
+    brandSlug: "breakwater",
+    email: "breakwater@thebrandhub.lk",
+  },
+};

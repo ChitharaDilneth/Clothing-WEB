@@ -25,12 +25,41 @@ export async function PUT(
 ) {
   try {
     const user = await getCurrentUser();
-    if (!user || (user.role !== "superadmin" && user.role !== "admin" && user.role !== "product_manager")) {
-      return NextResponse.json({ message: "Unauthorized. Admin access required." }, { status: 403 });
+    const isAllowed =
+      user &&
+      (user.role === "superadmin" ||
+        user.role === "admin" ||
+        user.role === "product_manager" ||
+        user.role === "brand_manager" ||
+        user.role === "vendor");
+
+    if (!isAllowed) {
+      return NextResponse.json({ message: "Unauthorized. Admin or Brand Manager access required." }, { status: 403 });
     }
 
     const { id } = await context.params;
+    const existing = await getProductBySlug(id);
+    if (!existing) {
+      return NextResponse.json({ message: "Product not found" }, { status: 404 });
+    }
+
+    // If Brand Manager, ensure they own this product
+    if (user.role === "brand_manager" || user.role === "vendor") {
+      if (user.brandSlug && existing.brand.toLowerCase() !== user.brandSlug.toLowerCase()) {
+        return NextResponse.json(
+          { message: "Forbidden: You are only permitted to edit items belonging to your brand." },
+          { status: 403 }
+        );
+      }
+    }
+
     const body = await req.json();
+
+    // Prevent brand manager from reassigning the product to another brand
+    if (user.role === "brand_manager" || user.role === "vendor") {
+      delete body.brand;
+    }
+
     const updated = await updateProduct(id, body);
     if (!updated) {
       return NextResponse.json({ message: "Product not found" }, { status: 404 });
@@ -48,11 +77,33 @@ export async function DELETE(
 ) {
   try {
     const user = await getCurrentUser();
-    if (!user || (user.role !== "superadmin" && user.role !== "admin")) {
+    const isAllowed =
+      user &&
+      (user.role === "superadmin" ||
+        user.role === "admin" ||
+        user.role === "brand_manager" ||
+        user.role === "vendor");
+
+    if (!isAllowed) {
       return NextResponse.json({ message: "Unauthorized. Admin access required." }, { status: 403 });
     }
 
     const { id } = await context.params;
+    const existing = await getProductBySlug(id);
+    if (!existing) {
+      return NextResponse.json({ message: "Product not found" }, { status: 404 });
+    }
+
+    // If Brand Manager, ensure they own this product
+    if (user.role === "brand_manager" || user.role === "vendor") {
+      if (user.brandSlug && existing.brand.toLowerCase() !== user.brandSlug.toLowerCase()) {
+        return NextResponse.json(
+          { message: "Forbidden: You can only delete products belonging to your own brand store." },
+          { status: 403 }
+        );
+      }
+    }
+
     const deleted = await deleteProduct(id);
     return NextResponse.json({ success: deleted });
   } catch (err) {

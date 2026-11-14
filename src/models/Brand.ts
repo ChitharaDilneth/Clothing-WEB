@@ -18,6 +18,7 @@ const BrandSchema = new Schema<IBrandDocument>(
     sortOrder: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
     featured: { type: Boolean, default: false },
+    managerUsername: { type: String, trim: true, lowercase: true },
   },
   { timestamps: true }
 );

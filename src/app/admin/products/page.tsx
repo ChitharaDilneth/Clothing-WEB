@@ -28,6 +28,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { IProduct, ICategory, IBrand, IProductImage, IProductColor } from "@/types";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 const PRESET_SIZES = ["XS", "S", "M", "L", "XL", "2XL", "Free Size", "UK 6", "UK 7", "UK 8", "UK 9", "UK 10"];
@@ -42,6 +43,10 @@ const PRESET_COLORS = [
 ];
 
 export default function AdminProductsPage() {
+  const { user } = useAuth();
+  const isBrandManager = user?.role === "brand_manager" || user?.role === "vendor";
+  const brandSlug = user?.brandSlug || "";
+
   const [products, setProducts] = useState<IProduct[]>([]);
   const [categories, setCategories] = useState<ICategory[]>([]);
   const [brands, setBrands] = useState<IBrand[]>([]);
@@ -148,6 +153,12 @@ export default function AdminProductsPage() {
   const filteredProducts = useMemo(() => {
     return products
       .filter((p) => {
+        // If logged in as Brand Manager, strictly only show their brand's products
+        if (isBrandManager && brandSlug) {
+          if (p.brand.toLowerCase() !== brandSlug.toLowerCase()) {
+            return false;
+          }
+        }
         const matchesSearch =
           !search ||
           p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -179,7 +190,7 @@ export default function AdminProductsPage() {
         // Default newest
         return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
       });
-  }, [products, search, selectedCategory, stockFilter, sortBy]);
+  }, [products, search, selectedCategory, selectedBrand, stockFilter, sortBy, isBrandManager, brandSlug]);
 
   // Grouped by Category
   const groupedProducts = useMemo(() => {
@@ -199,7 +210,7 @@ export default function AdminProductsPage() {
     setName("");
     setSlug("");
     setSku(`TBH-${Math.floor(10000 + Math.random() * 90000)}`);
-    setBrand(brands[0]?.name || "WAVES");
+    setBrand(isBrandManager && brandSlug ? brandSlug.toUpperCase() : (brands[0]?.name || "WAVES"));
     setCategory(prefillCategory || categories[0]?.name || "Women");
     setSubcategory("");
     setShortDescription("Premium Sri Lankan lifestyle collection piece.");
@@ -497,33 +508,78 @@ export default function AdminProductsPage() {
 
   return (
     <div className="space-y-6 pb-12">
+      {/* Brand Partner Scoped Notice Banner */}
+      {isBrandManager && brandSlug && (
+        <div className="bg-gradient-to-r from-amber-500/20 via-neutral-900 to-amber-500/10 border border-amber-500/40 rounded-3xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-black text-2xl border border-amber-500/30 shrink-0">
+              🏬
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-white font-black uppercase text-base tracking-wide">
+                  {brandSlug.toUpperCase()} Partner Catalog Console
+                </span>
+                <span className="text-[10px] bg-amber-400 text-black font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                  Official Partner Scoped
+                </span>
+              </div>
+              <p className="text-xs text-neutral-300 mt-1 max-w-2xl">
+                You have exclusive authoring permissions for the official <strong>{brandSlug.toUpperCase()}</strong> collection. You can add new drops, adjust inventory, edit descriptions, and fine-tune your dedicated storefront.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
+            <Link
+              href={`/brand/${brandSlug.toLowerCase()}`}
+              target="_blank"
+              className="bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors border border-neutral-700"
+            >
+              <span>View Live Storefront</span>
+              <ExternalLink className="w-3.5 h-3.5 text-neutral-400" />
+            </Link>
+            <Link
+              href="/admin/brand-customizer"
+              className="bg-amber-400 hover:bg-amber-300 text-black text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-all shadow-md"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Customize Storefront</span>
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-neutral-900/60 p-6 rounded-3xl border border-neutral-800">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-black uppercase tracking-wider text-white">
-              Product Management
+              {isBrandManager && brandSlug ? `${brandSlug.toUpperCase()} Products` : "Product Management"}
             </h1>
             <span className="bg-white/10 text-white text-xs font-bold px-2.5 py-1 rounded-full border border-neutral-700">
-              {products.length} Items Total
+              {filteredProducts.length} Items
             </span>
           </div>
           <p className="text-xs text-neutral-400 mt-1">
-            Easily add, edit descriptions, upload Cloudinary images, manage categories, and organize catalog stock.
+            {isBrandManager
+              ? `Manage and publish collection items specifically for the ${brandSlug.toUpperCase()} brand store.`
+              : "Easily add, edit descriptions, upload Cloudinary images, manage categories, and organize catalog stock."}
           </p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          <Link
-            href="/admin/categories"
-            className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 border border-neutral-700 transition-colors"
-          >
-            <Layers className="w-4 h-4" />
-            <span>Manage Categories</span>
-          </Link>
+          {!isBrandManager && (
+            <Link
+              href="/admin/categories"
+              className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 border border-neutral-700 transition-colors"
+            >
+              <Layers className="w-4 h-4" />
+              <span>Manage Categories</span>
+            </Link>
+          )}
           <button
             onClick={() => openCreateModal()}
-            className="bg-white text-black px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-neutral-200 transition-all flex items-center gap-2 shadow-lg hover:scale-102"
+            className="bg-white text-black px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-neutral-200 transition-all flex items-center gap-2 shadow-lg hover:scale-102 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add New Product</span>
@@ -606,18 +662,24 @@ export default function AdminProductsPage() {
         {/* Filters */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Brand Filter */}
-          <select
-            value={selectedBrand}
-            onChange={(e) => setSelectedBrand(e.target.value)}
-            className="bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-300 focus:outline-hidden cursor-pointer"
-          >
-            <option value="all">Brand: All Stores</option>
-            {brands.map((b) => (
-              <option key={b.slug} value={b.name}>
-                Brand: {b.name}
-              </option>
-            ))}
-          </select>
+          {isBrandManager && brandSlug ? (
+            <div className="bg-amber-400/10 border border-amber-400/30 px-3 py-2 rounded-xl text-xs text-amber-300 font-bold uppercase flex items-center gap-1.5">
+              <span>🏬 {brandSlug.toUpperCase()}</span>
+            </div>
+          ) : (
+            <select
+              value={selectedBrand}
+              onChange={(e) => setSelectedBrand(e.target.value)}
+              className="bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-300 focus:outline-hidden cursor-pointer"
+            >
+              <option value="all">Brand: All Stores</option>
+              {brands.map((b) => (
+                <option key={b.slug} value={b.name}>
+                  Brand: {b.name}
+                </option>
+              ))}
+            </select>
+          )}
 
           {/* Stock Filter */}
           <select
@@ -1147,11 +1209,21 @@ export default function AdminProductsPage() {
                     </div>
 
                     <div>
-                      <label className="font-bold text-neutral-300 block mb-1">Brand</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-bold text-neutral-300">Brand *</label>
+                        {isBrandManager && (
+                          <span className="text-[10px] text-amber-400 font-bold uppercase">
+                            🔒 Partner Scoped
+                          </span>
+                        )}
+                      </div>
                       <select
                         value={brand}
+                        disabled={isBrandManager}
                         onChange={(e) => setBrand(e.target.value)}
-                        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white focus:outline-hidden cursor-pointer text-xs uppercase"
+                        className={`w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white focus:outline-hidden text-xs uppercase ${
+                          isBrandManager ? "opacity-60 cursor-not-allowed bg-neutral-900 border-amber-500/30 text-amber-200" : "cursor-pointer"
+                        }`}
                       >
                         {brands.map((b) => (
                           <option key={b.name} value={b.name}>
@@ -1164,6 +1236,11 @@ export default function AdminProductsPage() {
                         <option value="PARAKEET">PARAKEET</option>
                         <option value="BREAKWATER">BREAKWATER</option>
                       </select>
+                      {isBrandManager && brandSlug && (
+                        <p className="text-[10px] text-amber-400/90 mt-1">
+                          Product will be permanently bound to your assigned brand: <strong>{brandSlug.toUpperCase()}</strong>
+                        </p>
+                      )}
                     </div>
 
                     <div>

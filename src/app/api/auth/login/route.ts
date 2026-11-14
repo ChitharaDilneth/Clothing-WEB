@@ -3,6 +3,7 @@ import {
   comparePassword,
   signToken,
   DEFAULT_ADMIN,
+  DEFAULT_BRAND_MANAGERS,
   ADMIN_USERNAME,
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     const cleanIdentifier = identifier.toLowerCase();
 
-    // 1. Check Pre-configured Admin Credentials (Username or Email)
+    // 1. Check Pre-configured Superadmin Credentials (Username or Email)
     const isAdminMatch =
       cleanIdentifier === ADMIN_USERNAME.toLowerCase() ||
       cleanIdentifier === ADMIN_EMAIL.toLowerCase() ||
@@ -58,18 +59,55 @@ export async function POST(req: NextRequest) {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        maxAge: 60 * 60 * 24 * 7,
         path: "/",
       });
 
       return response;
     }
 
-    // 2. Check Database Users in MongoDB (Match email or name)
+    // 2. Check Pre-configured Brand Manager Accounts (e.g. waves, ansel, breakwater)
+    if (DEFAULT_BRAND_MANAGERS[cleanIdentifier]) {
+      const brandManager = DEFAULT_BRAND_MANAGERS[cleanIdentifier];
+      if (password === brandManager.password) {
+        const token = signToken({
+          userId: `usr_brand_${brandManager.brandSlug}`,
+          email: brandManager.email,
+          name: brandManager.name,
+          role: "brand_manager",
+          username: brandManager.username,
+          brandSlug: brandManager.brandSlug,
+        });
+
+        const response = NextResponse.json({
+          user: {
+            userId: `usr_brand_${brandManager.brandSlug}`,
+            email: brandManager.email,
+            name: brandManager.name,
+            role: "brand_manager",
+            username: brandManager.username,
+            brandSlug: brandManager.brandSlug,
+          },
+        });
+
+        response.cookies.set("tbh_auth_token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+        });
+
+        return response;
+      }
+    }
+
+    // 3. Check Database Users in MongoDB (Match username, email, or name)
     const db = await connectDB();
     if (db) {
       const user = await UserModel.findOne({
         $or: [
+          { username: cleanIdentifier },
           { email: cleanIdentifier },
           { name: { $regex: new RegExp(`^${identifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") } },
         ],
@@ -81,6 +119,7 @@ export async function POST(req: NextRequest) {
           email: user.email,
           name: user.name,
           role: user.role,
+          username: user.username,
           brandSlug: user.brandSlug,
         });
 
@@ -90,6 +129,7 @@ export async function POST(req: NextRequest) {
             email: user.email,
             name: user.name,
             role: user.role,
+            username: user.username,
             brandSlug: user.brandSlug,
           },
         });

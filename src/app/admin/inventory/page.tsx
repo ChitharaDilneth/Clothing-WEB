@@ -2,11 +2,16 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { Sliders, Plus, Minus, Search, AlertTriangle, Check } from "lucide-react";
+import { Sliders, Plus, Minus, Search, AlertTriangle, Check, ShieldCheck } from "lucide-react";
 import { IProduct } from "@/types";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 export default function AdminInventoryPage() {
+  const { user } = useAuth();
+  const isBrandManager = user?.role === "brand_manager" || user?.role === "vendor";
+  const brandSlug = user?.brandSlug || "";
+
   const [products, setProducts] = useState<IProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -50,20 +55,33 @@ export default function AdminInventoryPage() {
     }
   };
 
-  const filtered = products.filter(
-    (p) =>
+  const filtered = products.filter((p) => {
+    if (isBrandManager && brandSlug) {
+      if ((p.brand || "").toLowerCase() !== brandSlug.toLowerCase()) return false;
+    }
+    return (
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.sku.toLowerCase().includes(search.toLowerCase())
-  );
+    );
+  });
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-black uppercase tracking-wider text-white">
-          Inventory Control
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-black uppercase tracking-wider text-white">
+            {isBrandManager && brandSlug ? `${brandSlug.toUpperCase()} Inventory Control` : "Inventory Control"}
+          </h1>
+          {isBrandManager && (
+            <span className="bg-amber-400/10 text-amber-300 text-xs font-bold px-2.5 py-0.5 rounded-full border border-amber-400/30 uppercase">
+              Partner Scoped
+            </span>
+          )}
+        </div>
         <p className="text-xs text-neutral-400 mt-0.5">
-          Real-time stock audits, replenishment triggers, and low inventory tracking.
+          {isBrandManager
+            ? `Audit, replenish stock counts, and monitor units exclusively for ${brandSlug.toUpperCase()} catalog items.`
+            : "Real-time stock audits, replenishment triggers, and low inventory tracking."}
         </p>
       </div>
 

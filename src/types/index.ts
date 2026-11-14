@@ -3,6 +3,7 @@ export type UserRole = "superadmin" | "admin" | "vendor" | "brand_manager" | "pr
 export interface IUser {
   _id?: string;
   name: string;
+  username?: string;
   email: string;
   passwordHash?: string;
   role: UserRole;
@@ -89,6 +90,8 @@ export interface IBrand {
   sortOrder?: number;
   isActive: boolean;
   featured?: boolean;
+  managerUsername?: string;
+  managerPassword?: string;
 }
 
 export interface ICustomizationDetails {
