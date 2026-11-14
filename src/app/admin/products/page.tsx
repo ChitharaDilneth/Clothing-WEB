@@ -50,6 +50,7 @@ export default function AdminProductsPage() {
   // Filters & Search
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedBrand, setSelectedBrand] = useState<string>("all");
   const [stockFilter, setStockFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("newest");
   const [viewMode, setViewMode] = useState<"table" | "grouped" | "grid">("table");
@@ -164,7 +165,11 @@ export default function AdminProductsPage() {
           (stockFilter === "low_stock" && p.stock > 0 && p.stock <= 5) ||
           (stockFilter === "out_of_stock" && p.stock <= 0);
 
-        return matchesSearch && matchesCategory && matchesStock;
+        const matchesBrand =
+          selectedBrand === "all" ||
+          p.brand.toLowerCase() === selectedBrand.toLowerCase();
+
+        return matchesSearch && matchesCategory && matchesStock && matchesBrand;
       })
       .sort((a, b) => {
         if (sortBy === "price_asc") return a.price - b.price;
@@ -600,6 +605,20 @@ export default function AdminProductsPage() {
 
         {/* Filters */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Brand Filter */}
+          <select
+            value={selectedBrand}
+            onChange={(e) => setSelectedBrand(e.target.value)}
+            className="bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-neutral-300 focus:outline-hidden cursor-pointer"
+          >
+            <option value="all">Brand: All Stores</option>
+            {brands.map((b) => (
+              <option key={b.slug} value={b.name}>
+                Brand: {b.name}
+              </option>
+            ))}
+          </select>
+
           {/* Stock Filter */}
           <select
             value={stockFilter}

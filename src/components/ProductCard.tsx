@@ -129,11 +129,15 @@ export default function ProductCard({ product, className = "" }: ProductCardProp
       {/* Info & Details Section */}
       <div className="pt-3 pb-1 flex-1 flex flex-col justify-between">
         <div>
-          {/* Brand & Category micro-label */}
+          {/* Brand micro-label with link to brand store */}
           {product.brand && (
-            <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-400 block mb-0.5">
+            <Link
+              href={`/brand/${product.brand.toLowerCase()}`}
+              className="text-[10px] uppercase font-bold tracking-widest text-neutral-400 hover:text-black transition-colors inline-block mb-0.5"
+              onClick={(e) => e.stopPropagation()}
+            >
               {product.brand}
-            </span>
+            </Link>
           )}
 
           {/* Title and Color Swatches row */}

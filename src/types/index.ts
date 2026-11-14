@@ -1,4 +1,4 @@
-export type UserRole = "superadmin" | "admin" | "product_manager" | "order_manager" | "customer";
+export type UserRole = "superadmin" | "admin" | "vendor" | "brand_manager" | "product_manager" | "order_manager" | "customer";
 
 export interface IUser {
   _id?: string;
@@ -7,6 +7,7 @@ export interface IUser {
   passwordHash?: string;
   role: UserRole;
   phone?: string;
+  brandSlug?: string;
   addresses?: {
     street: string;
     city: string;
@@ -78,9 +79,16 @@ export interface IBrand {
   name: string;
   slug: string;
   logo?: string;
+  banner?: string;
+  tagline?: string;
   description?: string;
+  story?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
   sortOrder?: number;
   isActive: boolean;
+  featured?: boolean;
 }
 
 export interface ICustomizationDetails {

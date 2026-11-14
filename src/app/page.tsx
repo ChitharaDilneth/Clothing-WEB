@@ -234,7 +234,7 @@ export default async function HomePage() {
           {brands.map((b) => (
             <Link
               key={b.slug}
-              href={`/category/all?brand=${b.name}`}
+              href={`/brand/${b.slug}`}
               className="border border-neutral-200 rounded-xl py-6 px-4 flex flex-col items-center justify-center hover:border-black hover:shadow-xs transition-all bg-white text-center group"
             >
               <span

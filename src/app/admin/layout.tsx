@@ -18,6 +18,7 @@ import {
   ExternalLink,
   ShieldCheck,
   Loader2,
+  Store,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import SiteLogo from "@/components/SiteLogo";
@@ -25,6 +26,7 @@ import SiteLogo from "@/components/SiteLogo";
 const ADMIN_NAV = [
   { name: "Overview", href: "/admin", icon: LayoutDashboard },
   { name: "Products", href: "/admin/products", icon: Package },
+  { name: "Brand Stores", href: "/admin/brands", icon: Store },
   { name: "Categories", href: "/admin/categories", icon: Layers },
   { name: "Orders", href: "/admin/orders", icon: ShoppingBag },
   { name: "Inventory", href: "/admin/inventory", icon: Sliders },

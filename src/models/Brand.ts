@@ -8,9 +8,16 @@ const BrandSchema = new Schema<IBrandDocument>(
     name: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
     logo: { type: String },
+    banner: { type: String },
+    tagline: { type: String },
     description: { type: String },
+    story: { type: String },
+    phone: { type: String },
+    email: { type: String },
+    website: { type: String },
     sortOrder: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
+    featured: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

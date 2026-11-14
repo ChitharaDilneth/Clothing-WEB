@@ -10,9 +10,10 @@ const UserSchema = new Schema<IUserDocument>(
     passwordHash: { type: String, required: true },
     role: {
       type: String,
-      enum: ["superadmin", "admin", "product_manager", "order_manager", "customer"],
+      enum: ["superadmin", "admin", "vendor", "brand_manager", "product_manager", "order_manager", "customer"],
       default: "customer",
     },
+    brandSlug: { type: String, lowercase: true },
     phone: { type: String },
     addresses: [
       {

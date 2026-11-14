@@ -10,6 +10,7 @@ interface UserProfile {
   name: string;
   role: UserRole;
   username?: string;
+  brandSlug?: string;
 }
 
 interface AuthContextType {
@@ -120,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const isAdmin = Boolean(
-    user && (user.role === "superadmin" || user.role === "admin" || user.role === "product_manager" || user.role === "order_manager")
+    user && (user.role === "superadmin" || user.role === "admin" || user.role === "vendor" || user.role === "brand_manager" || user.role === "product_manager" || user.role === "order_manager")
   );
 
   return (

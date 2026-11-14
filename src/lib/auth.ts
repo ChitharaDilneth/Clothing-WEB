@@ -16,6 +16,7 @@ export interface TokenPayload {
   name: string;
   role: UserRole;
   username?: string;
+  brandSlug?: string;
 }
 
 export function hashPassword(password: string): string {

@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
           email: user.email,
           name: user.name,
           role: user.role,
+          brandSlug: user.brandSlug,
         });
 
         const response = NextResponse.json({
@@ -89,6 +90,7 @@ export async function POST(req: NextRequest) {
             email: user.email,
             name: user.name,
             role: user.role,
+            brandSlug: user.brandSlug,
           },
         });
 
