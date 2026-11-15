@@ -108,8 +108,8 @@ export default function AdminProductsPage() {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [sku, setSku] = useState("");
-  const [brand, setBrand] = useState("WAVES");
-  const [category, setCategory] = useState("Women");
+  const [brand, setBrand] = useState("");
+  const [category, setCategory] = useState("");
   const [subcategory, setSubcategory] = useState("");
   const [shortDescription, setShortDescription] = useState("");
   const [description, setDescription] = useState("");
@@ -120,22 +120,22 @@ export default function AdminProductsPage() {
   const [isUploading, setIsUploading] = useState(false);
 
   // Pricing & Stock
-  const [price, setPrice] = useState<number>(2950);
-  const [originalPrice, setOriginalPrice] = useState<number>(3500);
-  const [costPrice, setCostPrice] = useState<number>(1500);
-  const [stock, setStock] = useState<number>(15);
+  const [price, setPrice] = useState<number | "">("");
+  const [originalPrice, setOriginalPrice] = useState<number | "">("");
+  const [costPrice, setCostPrice] = useState<number | "">("");
+  const [stock, setStock] = useState<number | "">("");
 
   // Variants & Features
-  const [selectedSizes, setSelectedSizes] = useState<string[]>(["Free Size"]);
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [customSizeInput, setCustomSizeInput] = useState("");
-  const [colors, setColors] = useState<IProductColor[]>([{ name: "Standard", hex: "#000000", inStock: true }]);
+  const [colors, setColors] = useState<IProductColor[]>([]);
   const [newColorName, setNewColorName] = useState("");
   const [newColorHex, setNewColorHex] = useState("#000000");
 
   const [isVirtualTryOn, setIsVirtualTryOn] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
   const [isBestseller, setIsBestseller] = useState(false);
-  const [isNewArrival, setIsNewArrival] = useState(true);
+  const [isNewArrival, setIsNewArrival] = useState(false);
   const [isActive, setIsActive] = useState(true);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -278,34 +278,24 @@ export default function AdminProductsPage() {
     setActiveTab("basic");
     setName("");
     setSlug("");
-    setSku(`TBH-${Math.floor(10000 + Math.random() * 90000)}`);
-    setBrand(isBrandManager && brandSlug ? brandSlug.toUpperCase() : (brands[0]?.name || "WAVES"));
-    setCategory(prefillCategory || categories[0]?.name || "Women");
+    setSku("");
+    setBrand(isBrandManager && brandSlug ? brandSlug.toUpperCase() : "");
+    setCategory(prefillCategory || "");
     setSubcategory("");
-    setShortDescription("Premium Sri Lankan lifestyle collection piece.");
-    setDescription(
-      "Crafted with premium tropical materials for all-day comfort. Designed for island adventures, coastal ease, and casual elegance."
-    );
-    setImages([
-      {
-        url: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
-        alt: "Main View",
-      },
-    ]);
+    setShortDescription("");
+    setDescription("");
+    setImages([]);
     setImageUrlInput("");
-    setPrice(2950);
-    setOriginalPrice(3500);
-    setCostPrice(1400);
-    setStock(20);
-    setSelectedSizes(["S", "M", "L", "Free Size"]);
-    setColors([
-      { name: "Black", hex: "#000000", inStock: true },
-      { name: "White", hex: "#FFFFFF", inStock: true },
-    ]);
-    setIsVirtualTryOn(true);
+    setPrice("");
+    setOriginalPrice("");
+    setCostPrice("");
+    setStock("");
+    setSelectedSizes([]);
+    setColors([]);
+    setIsVirtualTryOn(false);
     setIsFeatured(false);
     setIsBestseller(false);
-    setIsNewArrival(true);
+    setIsNewArrival(false);
     setIsActive(true);
     setIsModalOpen(true);
   };
@@ -325,9 +315,9 @@ export default function AdminProductsPage() {
     setImages(p.images && p.images.length > 0 ? p.images : []);
     setImageUrlInput("");
     setPrice(p.price);
-    setOriginalPrice(p.originalPrice || 0);
-    setCostPrice(p.costPrice || 0);
-    setStock(p.stock);
+    setOriginalPrice(p.originalPrice !== undefined ? p.originalPrice : "");
+    setCostPrice(p.costPrice !== undefined ? p.costPrice : "");
+    setStock(p.stock !== undefined ? p.stock : 0);
     setSelectedSizes(p.sizes && p.sizes.length > 0 ? p.sizes : ["Free Size"]);
     setColors(p.colors && p.colors.length > 0 ? p.colors : [{ name: "Standard", hex: "#000000", inStock: true }]);
     setIsVirtualTryOn(Boolean(p.isVirtualTryOn));
@@ -510,12 +500,27 @@ export default function AdminProductsPage() {
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      toast.error("Product name is required");
+      toast.error("Product title is required");
       setActiveTab("basic");
       return;
     }
-    if (!price || price <= 0) {
+    if (!brand.trim()) {
+      toast.error("Please select a brand");
+      setActiveTab("basic");
+      return;
+    }
+    if (!category.trim()) {
+      toast.error("Please select a primary category");
+      setActiveTab("basic");
+      return;
+    }
+    if (price === "" || Number(price) <= 0) {
       toast.error("Valid selling price is required");
+      setActiveTab("pricing");
+      return;
+    }
+    if (stock === "" || Number(stock) < 0) {
+      toast.error("Please enter available stock quantity");
       setActiveTab("pricing");
       return;
     }
@@ -524,9 +529,13 @@ export default function AdminProductsPage() {
     const toastId = toast.loading(editingProduct ? "Updating product..." : "Publishing new product...");
 
     try {
+      const finalSku = sku.trim()
+        ? sku.trim().toUpperCase()
+        : `TBH-${Math.floor(10000 + Math.random() * 90000)}`;
+
       const payload: Partial<IProduct> = {
         name: name.trim(),
-        sku: sku.trim().toUpperCase(),
+        sku: finalSku,
         brand: brand.trim(),
         category: category.trim(),
         subcategory: subcategory.trim(),
@@ -542,9 +551,9 @@ export default function AdminProductsPage() {
                 },
               ],
         price: Number(price),
-        originalPrice: originalPrice ? Number(originalPrice) : undefined,
-        costPrice: costPrice ? Number(costPrice) : undefined,
-        stock: Number(stock),
+        originalPrice: originalPrice !== "" && Number(originalPrice) > 0 ? Number(originalPrice) : undefined,
+        costPrice: costPrice !== "" && Number(costPrice) > 0 ? Number(costPrice) : undefined,
+        stock: Number(stock) || 0,
         sizes: selectedSizes.length > 0 ? selectedSizes : ["Free Size"],
         colors: colors.length > 0 ? colors : [{ name: "Standard", hex: "#000000", inStock: true }],
         isVirtualTryOn,
@@ -610,13 +619,13 @@ export default function AdminProductsPage() {
 
   // Calculate discount %
   const discountPercent =
-    originalPrice && originalPrice > price
-      ? Math.round(((originalPrice - price) / originalPrice) * 100)
+    originalPrice !== "" && price !== "" && Number(originalPrice) > Number(price)
+      ? Math.round(((Number(originalPrice) - Number(price)) / Number(originalPrice)) * 100)
       : 0;
 
   // Calculate profit margin
-  const profit = price - (costPrice || 0);
-  const profitMargin = price > 0 ? Math.round((profit / price) * 100) : 0;
+  const profit = (Number(price) || 0) - (Number(costPrice) || 0);
+  const profitMargin = Number(price) > 0 ? Math.round((profit / Number(price)) * 100) : 0;
 
   return (
     <div className="space-y-6 pb-12">
@@ -1604,10 +1613,10 @@ export default function AdminProductsPage() {
                     </div>
 
                     <div>
-                      <label className="font-bold text-neutral-700 block mb-1">SKU Code *</label>
+                      <label className="font-bold text-neutral-700 block mb-1">SKU Code (Optional)</label>
                       <input
                         type="text"
-                        required
+                        placeholder="e.g. TBH-10294"
                         value={sku}
                         onChange={(e) => setSku(e.target.value.toUpperCase())}
                         className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-mono uppercase text-xs"
@@ -1631,16 +1640,19 @@ export default function AdminProductsPage() {
                           isBrandManager ? "opacity-60 cursor-not-allowed bg-neutral-100" : "cursor-pointer"
                         }`}
                       >
+                        <option value="">-- Choose Brand --</option>
                         {brands.map((b) => (
                           <option key={b.name} value={b.name}>
                             {b.name}
                           </option>
                         ))}
-                        <option value="TBH">TBH</option>
-                        <option value="WAVES">WAVES</option>
-                        <option value="ANSEL">ANSEL</option>
-                        <option value="PARAKEET">PARAKEET</option>
-                        <option value="BREAKWATER">BREAKWATER</option>
+                        {["TBH", "WAVES", "ANSEL", "PARAKEET", "BREAKWATER"]
+                          .filter((bName) => !brands.some((b) => b.name?.toUpperCase() === bName.toUpperCase()))
+                          .map((bName) => (
+                            <option key={bName} value={bName}>
+                              {bName}
+                            </option>
+                          ))}
                       </select>
                       {isBrandManager && brandSlug && (
                         <p className="text-[10px] text-amber-400/90 mt-1">
@@ -1656,11 +1668,19 @@ export default function AdminProductsPage() {
                         onChange={(e) => setCategory(e.target.value)}
                         className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden cursor-pointer text-xs font-bold"
                       >
+                        <option value="">-- Choose Category --</option>
                         {categories.map((c) => (
                           <option key={c.name} value={c.name}>
                             {c.name}
                           </option>
                         ))}
+                        {["Women", "Men", "Kids", "Unisex", "Health", "Clothing", "Bags"]
+                          .filter((catName) => !categories.some((c) => c.name?.toLowerCase() === catName.toLowerCase()))
+                          .map((catName) => (
+                            <option key={catName} value={catName}>
+                              {catName}
+                            </option>
+                          ))}
                       </select>
                     </div>
 
@@ -1812,8 +1832,9 @@ export default function AdminProductsPage() {
                       <input
                         type="number"
                         required
+                        placeholder="e.g. 2950"
                         value={price}
-                        onChange={(e) => setPrice(Number(e.target.value))}
+                        onChange={(e) => setPrice(e.target.value === "" ? "" : Number(e.target.value))}
                         className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-bold text-xs focus:outline-hidden"
                       />
                     </div>
@@ -1822,8 +1843,9 @@ export default function AdminProductsPage() {
                       <label className="font-bold text-neutral-700 block mb-1">Original MRP (Rs.)</label>
                       <input
                         type="number"
+                        placeholder="e.g. 3500"
                         value={originalPrice}
-                        onChange={(e) => setOriginalPrice(Number(e.target.value))}
+                        onChange={(e) => setOriginalPrice(e.target.value === "" ? "" : Number(e.target.value))}
                         className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 text-xs focus:outline-hidden"
                       />
                       {discountPercent > 0 && (
@@ -1837,11 +1859,12 @@ export default function AdminProductsPage() {
                       <label className="font-bold text-neutral-700 block mb-1">Cost Price (Admin Only)</label>
                       <input
                         type="number"
+                        placeholder="e.g. 1400"
                         value={costPrice}
-                        onChange={(e) => setCostPrice(Number(e.target.value))}
+                        onChange={(e) => setCostPrice(e.target.value === "" ? "" : Number(e.target.value))}
                         className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 text-xs focus:outline-hidden"
                       />
-                      {costPrice > 0 && (
+                      {costPrice !== "" && Number(costPrice) > 0 && (
                         <span className="text-[10px] text-neutral-500 font-bold mt-1 block">
                           Profit: Rs. {profit.toLocaleString()} ({profitMargin}%)
                         </span>
@@ -1854,8 +1877,9 @@ export default function AdminProductsPage() {
                     <input
                       type="number"
                       required
+                      placeholder="e.g. 20"
                       value={stock}
-                      onChange={(e) => setStock(Number(e.target.value))}
+                      onChange={(e) => setStock(e.target.value === "" ? "" : Number(e.target.value))}
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-black text-sm focus:outline-hidden"
                     />
                     <p className="text-[10px] text-neutral-500 mt-1">
@@ -1913,27 +1937,31 @@ export default function AdminProductsPage() {
                   {/* Colors */}
                   <div className="pt-2 border-t border-neutral-200">
                     <label className="font-bold text-neutral-700 block mb-2">Color Swatches</label>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {colors.map((c, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center gap-2 bg-neutral-50 border border-neutral-200 px-3 py-1.5 rounded-xl text-xs"
-                        >
-                          <span
-                            className="w-3.5 h-3.5 rounded-full border border-neutral-300"
-                            style={{ backgroundColor: c.hex }}
-                          />
-                          <span className="text-neutral-900 font-medium">{c.name}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveColor(i)}
-                            className="text-neutral-400 hover:text-red-500 ml-1"
+                    {colors.length === 0 ? (
+                      <p className="text-neutral-400 italic text-[11px] mb-3">No custom color swatches added yet.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {colors.map((c, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center gap-2 bg-neutral-50 border border-neutral-200 px-3 py-1.5 rounded-xl text-xs"
                           >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                            <span
+                              className="w-3.5 h-3.5 rounded-full border border-neutral-300"
+                              style={{ backgroundColor: c.hex }}
+                            />
+                            <span className="text-neutral-900 font-medium">{c.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveColor(i)}
+                              className="text-neutral-400 hover:text-red-500 ml-1"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-2 flex-wrap">
                       <input
