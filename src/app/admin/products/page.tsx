@@ -1536,53 +1536,59 @@ export default function AdminProductsPage() {
 
       {/* ================= ADD / EDIT PRODUCT MODAL ================= */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white border border-neutral-200/80 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl my-8 text-neutral-900">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-neutral-200/80">
-              <div>
-                <h2 className="text-lg font-bold uppercase tracking-wider text-neutral-900">
-                  {editingProduct ? `Edit Product: ${editingProduct.name}` : "Create New Product"}
-                </h2>
-                <p className="text-xs text-neutral-500 mt-0.5">
-                  Fill in product details, upload images to Cloudinary, and configure options.
-                </p>
-              </div>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-neutral-400 hover:text-black p-1 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Navigation Tabs */}
-            <div className="flex items-center gap-2 border-b border-neutral-200/80 mt-4 overflow-x-auto pb-2">
-              {[
-                { id: "basic", label: "1. Info & Category" },
-                { id: "media", label: `2. Cloudinary Images (${images.length})` },
-                { id: "pricing", label: "3. Pricing & Stock" },
-                { id: "variants", label: "4. Sizes, Colors & AI" },
-              ].map((tab) => (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 sm:p-6">
+          <div className="bg-white border border-neutral-200/90 rounded-3xl max-w-3xl w-full max-h-[88vh] flex flex-col shadow-2xl text-neutral-900 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200">
+            {/* 1. FIXED TOP HEADER & NAVIGATION TABS */}
+            <div className="px-6 sm:px-8 py-5 border-b border-neutral-100 shrink-0 bg-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base sm:text-lg font-black uppercase tracking-wider text-neutral-900">
+                    {editingProduct ? `Edit Product: ${editingProduct.name}` : "Create New Product"}
+                  </h2>
+                  <p className="text-xs text-neutral-500 mt-0.5 font-medium">
+                    Fill in product details, upload images to Cloudinary, and configure options.
+                  </p>
+                </div>
                 <button
-                  key={tab.id}
                   type="button"
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${
-                    activeTab === tab.id
-                      ? "bg-black text-white"
-                      : "text-neutral-500 hover:text-black hover:bg-neutral-100"
-                  }`}
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-neutral-400 hover:text-black p-1.5 rounded-lg transition-colors cursor-pointer"
+                  title="Close Modal"
                 >
-                  {tab.label}
+                  <X className="w-5 h-5" />
                 </button>
-              ))}
+              </div>
+
+              {/* Navigation Tabs */}
+              <div className="flex items-center gap-2 border-b border-neutral-100 mt-4 overflow-x-auto pb-2 scrollbar-none">
+                {[
+                  { id: "basic", label: "1. Info & Category" },
+                  { id: "media", label: `2. Cloudinary Images (${images.length})` },
+                  { id: "pricing", label: "3. Pricing & Stock" },
+                  { id: "variants", label: "4. Sizes, Colors & AI" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                      activeTab === tab.id
+                        ? "bg-black text-white shadow-xs"
+                        : "text-neutral-500 hover:text-black hover:bg-neutral-100"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSaveProduct} className="mt-5 space-y-5 text-xs">
-              {/* TAB 1: BASIC INFO & CATEGORIES */}
-              {activeTab === "basic" && (
+            {/* 2. FORM WRAPPER (flex-1 flex flex-col min-h-0 overflow-hidden) */}
+            <form onSubmit={handleSaveProduct} className="flex flex-col min-h-0 flex-1 overflow-hidden">
+              {/* 3. SCROLLABLE MIDDLE BODY CONTENT */}
+              <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-5 space-y-5 text-xs">
+                {/* TAB 1: BASIC INFO & CATEGORIES */}
+                {activeTab === "basic" && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="sm:col-span-2">
@@ -2003,17 +2009,19 @@ export default function AdminProductsPage() {
                 </div>
               )}
 
-              {/* Form Action Buttons */}
-              <div className="pt-4 flex items-center justify-between gap-3 border-t border-neutral-200">
+              </div>
+
+              {/* 4. FIXED BOTTOM FOOTER (shrink-0) */}
+              <div className="px-6 sm:px-8 py-4 border-t border-neutral-100 bg-neutral-50/80 shrink-0 flex items-center justify-between gap-3 text-xs">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-5 py-3 rounded-xl border border-neutral-200 text-neutral-700 font-bold uppercase hover:bg-neutral-100 transition-colors"
+                  className="px-5 py-2.5 rounded-xl border border-neutral-200 bg-white text-neutral-700 font-bold uppercase hover:bg-neutral-100 transition-colors cursor-pointer shadow-2xs"
                 >
                   Cancel
                 </button>
 
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                   {activeTab !== "basic" && (
                     <button
                       type="button"
@@ -2022,7 +2030,7 @@ export default function AdminProductsPage() {
                         if (activeTab === "pricing") setActiveTab("media");
                         if (activeTab === "variants") setActiveTab("pricing");
                       }}
-                      className="px-4 py-3 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-bold transition-colors"
+                      className="px-4 py-2.5 rounded-xl bg-white border border-neutral-200 hover:bg-neutral-100 text-neutral-800 font-bold transition-colors cursor-pointer shadow-2xs"
                     >
                       Back
                     </button>
@@ -2036,7 +2044,7 @@ export default function AdminProductsPage() {
                         if (activeTab === "media") setActiveTab("pricing");
                         if (activeTab === "pricing") setActiveTab("variants");
                       }}
-                      className="px-5 py-3 rounded-xl bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-bold transition-colors"
+                      className="px-5 py-2.5 rounded-xl bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-bold transition-colors cursor-pointer shadow-2xs"
                     >
                       Next Step →
                     </button>
@@ -2045,7 +2053,7 @@ export default function AdminProductsPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-6 py-3 rounded-xl bg-black text-white font-bold uppercase hover:bg-neutral-800 transition-all disabled:opacity-50 shadow-md"
+                    className="px-6 py-2.5 rounded-xl bg-black text-white font-bold uppercase hover:bg-neutral-800 transition-all disabled:opacity-50 shadow-md cursor-pointer"
                   >
                     {isSubmitting ? "Saving..." : editingProduct ? "Save Changes" : "Publish Product"}
                   </button>
