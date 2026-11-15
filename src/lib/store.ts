@@ -704,20 +704,37 @@ export async function getProducts(filters?: {
   return { products: paginated, total };
 }
 
-export async function getProductBySlug(slug: string): Promise<IProduct | null> {
+export async function getProductBySlug(slugOrId: string): Promise<IProduct | null> {
   const db = await connectDB();
   if (db) {
     try {
-      const p = await ProductModel.findOne({ slug: slug.toLowerCase() }).lean();
+      let p = null;
+      if (mongoose.Types.ObjectId.isValid(slugOrId)) {
+        p = await ProductModel.findById(slugOrId).lean();
+      }
+      if (!p) {
+        p = await ProductModel.findOne({
+          $or: [
+            { slug: slugOrId.toLowerCase() },
+            { sku: slugOrId.toUpperCase() },
+            { _id: slugOrId },
+          ],
+        }).lean();
+      }
       if (p) {
         const plain = JSON.parse(JSON.stringify(p));
         return { ...plain, _id: String(plain._id) } as IProduct;
       }
     } catch (e) {
-      console.error("Error fetching product by slug from MongoDB:", e);
+      console.error("Error fetching product by slug/id from MongoDB:", e);
     }
   }
-  const item = memoryProducts.find((p) => p.slug.toLowerCase() === slug.toLowerCase());
+  const item = memoryProducts.find(
+    (p) =>
+      p.slug.toLowerCase() === slugOrId.toLowerCase() ||
+      p._id === slugOrId ||
+      p.sku.toUpperCase() === slugOrId.toUpperCase()
+  );
   return item ? JSON.parse(JSON.stringify(item)) : null;
 }
 
@@ -793,7 +810,13 @@ export async function updateProduct(id: string, data: Partial<IProduct>): Promis
       }
       if (!updated) {
         updated = await ProductModel.findOneAndUpdate(
-          { $or: [{ slug: id }, { sku: id }] },
+          {
+            $or: [
+              { slug: id.toLowerCase() },
+              { sku: id.toUpperCase() },
+              { _id: id },
+            ],
+          },
           data,
           { new: true }
         ).lean();
@@ -803,7 +826,12 @@ export async function updateProduct(id: string, data: Partial<IProduct>): Promis
       console.error("Error updating product in MongoDB:", e);
     }
   }
-  const index = memoryProducts.findIndex((p) => p._id === id || p.slug === id || p.sku === id);
+  const index = memoryProducts.findIndex(
+    (p) =>
+      p._id === id ||
+      p.slug.toLowerCase() === id.toLowerCase() ||
+      p.sku.toUpperCase() === id.toUpperCase()
+  );
   if (index !== -1) {
     memoryProducts[index] = { ...memoryProducts[index], ...data };
     return memoryProducts[index];
@@ -818,7 +846,13 @@ export async function deleteProduct(id: string): Promise<boolean> {
       if (mongoose.Types.ObjectId.isValid(id)) {
         await ProductModel.findByIdAndDelete(id);
       } else {
-        await ProductModel.findOneAndDelete({ $or: [{ slug: id }, { sku: id }] });
+        await ProductModel.findOneAndDelete({
+          $or: [
+            { slug: id.toLowerCase() },
+            { sku: id.toUpperCase() },
+            { _id: id },
+          ],
+        });
       }
       return true;
     } catch (e) {
@@ -826,7 +860,12 @@ export async function deleteProduct(id: string): Promise<boolean> {
     }
   }
   const initialLen = memoryProducts.length;
-  memoryProducts = memoryProducts.filter((p) => p._id !== id && p.slug !== id && p.sku !== id);
+  memoryProducts = memoryProducts.filter(
+    (p) =>
+      p._id !== id &&
+      p.slug.toLowerCase() !== id.toLowerCase() &&
+      p.sku.toUpperCase() !== id.toUpperCase()
+  );
   return memoryProducts.length < initialLen;
 }
 

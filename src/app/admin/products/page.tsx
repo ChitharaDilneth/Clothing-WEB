@@ -97,7 +97,7 @@ export default function AdminProductsPage() {
   const [viewMode, setViewMode] = useState<"table" | "grouped" | "grid">("table");
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const pageSize = 5;
+  const [pageSize, setPageSize] = useState<number>(15);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -421,9 +421,19 @@ export default function AdminProductsPage() {
     setColors((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  // Quick Stock Adjustment
+  // Quick Stock Adjustment with Optimistic UI & Error Recovery
   const handleQuickStock = async (product: IProduct, delta: number) => {
-    const newStock = Math.max(0, product.stock + delta);
+    const prevStock = product.stock;
+    const newStock = Math.max(0, prevStock + delta);
+    if (newStock === prevStock) return;
+
+    // Optimistic UI update
+    setProducts((prev) =>
+      prev.map((p) =>
+        p._id === product._id || p.slug === product.slug ? { ...p, stock: newStock } : p
+      )
+    );
+
     try {
       const id = product._id || product.slug;
       const res = await fetch(`/api/products/${id}`, {
@@ -432,19 +442,40 @@ export default function AdminProductsPage() {
         body: JSON.stringify({ stock: newStock }),
       });
       if (res.ok) {
+        toast.success(`${product.name}: stock updated to ${newStock} units`);
+      } else {
+        // Revert on failure
         setProducts((prev) =>
-          prev.map((p) => (p._id === product._id || p.slug === product.slug ? { ...p, stock: newStock } : p))
+          prev.map((p) =>
+            p._id === product._id || p.slug === product.slug ? { ...p, stock: prevStock } : p
+          )
         );
-        toast.success(`Stock updated: ${newStock} units`);
+        const err = await res.json().catch(() => null);
+        toast.error(err?.message || "Failed to update stock");
       }
     } catch {
-      toast.error("Failed to update stock");
+      // Revert on failure
+      setProducts((prev) =>
+        prev.map((p) =>
+          p._id === product._id || p.slug === product.slug ? { ...p, stock: prevStock } : p
+        )
+      );
+      toast.error("Network error while updating stock");
     }
   };
 
-  // Toggle Active Status
+  // Toggle Active / Visibility Status with Optimistic UI & Error Recovery
   const handleToggleActive = async (product: IProduct) => {
-    const newStatus = !product.isActive;
+    const prevStatus = product.isActive !== false;
+    const newStatus = !prevStatus;
+
+    // Optimistic UI update
+    setProducts((prev) =>
+      prev.map((p) =>
+        p._id === product._id || p.slug === product.slug ? { ...p, isActive: newStatus } : p
+      )
+    );
+
     try {
       const id = product._id || product.slug;
       const res = await fetch(`/api/products/${id}`, {
@@ -453,13 +484,25 @@ export default function AdminProductsPage() {
         body: JSON.stringify({ isActive: newStatus }),
       });
       if (res.ok) {
+        toast.success(newStatus ? "Product published to storefront" : "Product hidden from storefront");
+      } else {
+        // Revert on failure
         setProducts((prev) =>
-          prev.map((p) => (p._id === product._id || p.slug === product.slug ? { ...p, isActive: newStatus } : p))
+          prev.map((p) =>
+            p._id === product._id || p.slug === product.slug ? { ...p, isActive: prevStatus } : p
+          )
         );
-        toast.success(newStatus ? "Product published to store" : "Product hidden from store");
+        const err = await res.json().catch(() => null);
+        toast.error(err?.message || "Failed to update product visibility");
       }
     } catch {
-      toast.error("Failed to update status");
+      // Revert on failure
+      setProducts((prev) =>
+        prev.map((p) =>
+          p._id === product._id || p.slug === product.slug ? { ...p, isActive: prevStatus } : p
+        )
+      );
+      toast.error("Network error updating visibility");
     }
   };
 
@@ -620,15 +663,20 @@ export default function AdminProductsPage() {
 
       {/* Main Container Card matching Image 1 */}
       <div className="bg-white border border-neutral-200/90 rounded-[28px] sm:rounded-[36px] p-6 sm:p-8 shadow-xs space-y-6">
-        {/* 1. Top Header */}
+        {/* 1. Top Header with Squircle Icon & Orange Line */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-900">
-              {isBrandManager && brandSlug ? `${brandSlug.toUpperCase()} Products` : "Product Management"}
-            </h1>
-            <p className="text-xs text-neutral-500 mt-1 font-medium">
-              Easily add, edit descriptions, manage categories, and organize catalog stock.
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-white border border-neutral-200 shadow-2xs flex items-center justify-center text-neutral-900 shrink-0">
+              <Package className="w-5 h-5 text-neutral-800" />
+            </div>
+            <div className="border-l-3 border-amber-500 pl-3">
+              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-neutral-900">
+                {isBrandManager && brandSlug ? `${brandSlug.toUpperCase()} Products` : "Product Management"}
+              </h1>
+              <p className="text-xs text-neutral-500 mt-0.5 font-medium">
+                Easily add, edit descriptions, manage categories, and organize catalog stock.
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
@@ -652,7 +700,7 @@ export default function AdminProductsPage() {
           </div>
         </div>
 
-        {/* 2. KPI / Stat Summary Cards (4 Bento Cards from Image 1) */}
+        {/* 2. KPI / Stat Summary Cards (Clean Bento Cards without photos) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Card 1: Total Products */}
           <div className="bg-gradient-to-r from-blue-50/50 via-white to-white border border-neutral-200/90 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-2xs hover:shadow-xs transition-shadow">
@@ -672,11 +720,6 @@ export default function AdminProductsPage() {
                 </div>
               </div>
             </div>
-            <img
-              src="https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=200&q=80"
-              alt="Total Products"
-              className="w-16 h-12 object-cover rounded-xl shadow-2xs shrink-0"
-            />
           </div>
 
           {/* Card 2: Categories */}
@@ -694,11 +737,6 @@ export default function AdminProductsPage() {
                 </div>
               </div>
             </div>
-            <img
-              src="https://images.unsplash.com/photo-1523381294911-8d3cead13475?auto=format&fit=crop&w=200&q=80"
-              alt="Categories"
-              className="w-16 h-12 object-cover rounded-xl shadow-2xs shrink-0"
-            />
           </div>
 
           {/* Card 3: Low Stock */}
@@ -719,11 +757,6 @@ export default function AdminProductsPage() {
                 </div>
               </div>
             </div>
-            <img
-              src="https://images.unsplash.com/photo-1608256246200-53e635b5b65f?auto=format&fit=crop&w=200&q=80"
-              alt="Low Stock"
-              className="w-16 h-12 object-cover rounded-xl shadow-2xs shrink-0"
-            />
           </div>
 
           {/* Card 4: Published */}
@@ -744,11 +777,6 @@ export default function AdminProductsPage() {
                 </div>
               </div>
             </div>
-            <img
-              src="https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?auto=format&fit=crop&w=200&q=80"
-              alt="Published"
-              className="w-16 h-12 object-cover rounded-xl shadow-2xs shrink-0"
-            />
           </div>
         </div>
 
@@ -796,7 +824,7 @@ export default function AdminProductsPage() {
           })}
         </div>
 
-        {/* 4. Toolbar: Search Bar, Dropdowns & View Toggle */}
+        {/* 4. Toolbar: Search Bar, Dropdowns with Aligned Arrows & View Toggle */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
           {/* Search Input */}
           <div className="relative flex-1">
@@ -809,7 +837,7 @@ export default function AdminProductsPage() {
                 setSearch(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full bg-white border border-neutral-200 rounded-full pl-11 pr-4 py-2 text-xs text-neutral-900 placeholder-neutral-400 focus:outline-hidden focus:border-black font-medium shadow-2xs"
+              className="w-full bg-white border border-neutral-200 rounded-full pl-11 pr-4 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:outline-hidden focus:border-neutral-900 font-medium shadow-2xs"
             />
           </div>
 
@@ -821,50 +849,81 @@ export default function AdminProductsPage() {
                 <span>🏬 {brandSlug.toUpperCase()}</span>
               </div>
             ) : (
-              <select
-                value={selectedBrand}
-                onChange={(e) => {
-                  setSelectedBrand(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="bg-white border border-neutral-200 rounded-full px-3.5 py-2 text-xs text-neutral-800 focus:outline-hidden focus:border-black cursor-pointer font-medium shadow-2xs"
-              >
-                <option value="all">Brand: All Stores</option>
-                {brands.map((b) => (
-                  <option key={b.slug} value={b.name}>
-                    Brand: {b.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <Tag className="w-3.5 h-3.5 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <select
+                  value={selectedBrand}
+                  onChange={(e) => {
+                    setSelectedBrand(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="appearance-none bg-white border border-neutral-200/90 text-neutral-800 text-xs font-semibold rounded-full pl-9 pr-8 py-2.5 shadow-2xs focus:outline-hidden focus:border-neutral-900 cursor-pointer"
+                >
+                  <option value="all">Brand: All Stores</option>
+                  {brands.map((b) => (
+                    <option key={b.slug} value={b.name}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             )}
 
             {/* Stock Filter */}
-            <select
-              value={stockFilter}
-              onChange={(e) => {
-                setStockFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-white border border-neutral-200 rounded-full px-3.5 py-2 text-xs text-neutral-800 focus:outline-hidden focus:border-black cursor-pointer font-medium shadow-2xs"
-            >
-              <option value="all">Stock: All</option>
-              <option value="in_stock">In Stock (&gt; 5)</option>
-              <option value="low_stock">Low Stock (1-5)</option>
-              <option value="out_of_stock">Out of Stock (0)</option>
-            </select>
+            <div className="relative">
+              <Package className="w-3.5 h-3.5 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <select
+                value={stockFilter}
+                onChange={(e) => {
+                  setStockFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="appearance-none bg-white border border-neutral-200/90 text-neutral-800 text-xs font-semibold rounded-full pl-9 pr-8 py-2.5 shadow-2xs focus:outline-hidden focus:border-neutral-900 cursor-pointer"
+              >
+                <option value="all">Stock: All</option>
+                <option value="in_stock">In Stock (&gt; 5)</option>
+                <option value="low_stock">Low Stock (1-5)</option>
+                <option value="out_of_stock">Out of Stock (0)</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
 
             {/* Sort Filter */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="bg-white border border-neutral-200 rounded-full px-3.5 py-2 text-xs text-neutral-800 focus:outline-hidden focus:border-black cursor-pointer font-medium shadow-2xs"
-            >
-              <option value="newest">Sort: Newest</option>
-              <option value="price_asc">Price: Low to High</option>
-              <option value="price_desc">Price: High to Low</option>
-              <option value="stock_asc">Stock: Low to High</option>
-              <option value="name_asc">Name: A to Z</option>
-            </select>
+            <div className="relative">
+              <ArrowUpDown className="w-3.5 h-3.5 text-neutral-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="appearance-none bg-white border border-neutral-200/90 text-neutral-800 text-xs font-semibold rounded-full pl-9 pr-8 py-2.5 shadow-2xs focus:outline-hidden focus:border-neutral-900 cursor-pointer"
+              >
+                <option value="newest">Sort: Newest</option>
+                <option value="price_asc">Price: Low to High</option>
+                <option value="price_desc">Price: High to Low</option>
+                <option value="stock_asc">Stock: Low to High</option>
+                <option value="name_asc">Name: A to Z</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            {/* Reset Filter Button */}
+            {(search || selectedCategory !== "all" || selectedBrand !== "all" || stockFilter !== "all" || sortBy !== "newest") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  setSelectedCategory("all");
+                  setSelectedBrand("all");
+                  setStockFilter("all");
+                  setSortBy("newest");
+                  setCurrentPage(1);
+                }}
+                className="p-2 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-full transition-colors cursor-pointer"
+                title="Reset Filters"
+              >
+                <Filter className="w-4 h-4" />
+              </button>
+            )}
 
             {/* View Mode Toggle */}
             <div className="flex items-center bg-white border border-neutral-200 rounded-full p-1 shadow-2xs">
@@ -880,8 +939,18 @@ export default function AdminProductsPage() {
               </button>
               <button
                 type="button"
+                onClick={() => setViewMode("grouped")}
+                title="Grouped by Category"
+                className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+                  viewMode === "grouped" ? "bg-black text-white" : "text-neutral-400 hover:text-black"
+                }`}
+              >
+                <FolderTree className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
                 onClick={() => setViewMode("grid")}
-                title="Grid View"
+                title="Grid Cards"
                 className={`p-1.5 rounded-full transition-colors cursor-pointer ${
                   viewMode === "grid" ? "bg-black text-white" : "text-neutral-400 hover:text-black"
                 }`}
@@ -891,6 +960,8 @@ export default function AdminProductsPage() {
             </div>
           </div>
         </div>
+
+
 
       {/* Main Content Area based on View Mode */}
       {loading ? (
@@ -1140,9 +1211,29 @@ export default function AdminProductsPage() {
 
           {/* Pagination Controls */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-neutral-100 text-xs">
-            <span className="text-neutral-500 font-medium">
-              Showing {filteredProducts.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} – {Math.min(currentPage * pageSize, filteredProducts.length)} of {filteredProducts.length} products
-            </span>
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-neutral-500 font-medium">
+                Showing {filteredProducts.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} –{" "}
+                {Math.min(currentPage * pageSize, filteredProducts.length)} of {filteredProducts.length} products
+              </span>
+              <div className="flex items-center gap-1.5 text-neutral-500 font-medium">
+                <span>Show</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-white border border-neutral-200 rounded-lg px-2 py-0.5 text-xs text-neutral-800 font-bold focus:outline-hidden cursor-pointer shadow-2xs"
+                >
+                  <option value={10}>10</option>
+                  <option value={15}>15</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+                <span>per page</span>
+              </div>
+            </div>
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
@@ -1285,14 +1376,16 @@ export default function AdminProductsPage() {
                           <button
                             type="button"
                             onClick={() => handleQuickStock(p, -1)}
-                            className="text-neutral-500 hover:text-black font-mono text-xs px-1 cursor-pointer font-bold"
+                            className="w-5 h-5 flex items-center justify-center text-neutral-500 hover:text-black hover:bg-neutral-200/70 rounded-full font-mono text-sm cursor-pointer font-bold transition-colors"
                             title="Decrease stock"
                           >
                             -
                           </button>
                           <span
-                            className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                              p.stock <= 5
+                            className={`px-2.5 py-0.5 rounded-full text-xs font-bold min-w-[28px] text-center ${
+                              p.stock <= 0
+                                ? "bg-rose-100 text-rose-800"
+                                : p.stock <= 5
                                 ? "bg-amber-100 text-amber-800"
                                 : "bg-emerald-100 text-emerald-800"
                             }`}
@@ -1302,7 +1395,7 @@ export default function AdminProductsPage() {
                           <button
                             type="button"
                             onClick={() => handleQuickStock(p, 1)}
-                            className="text-neutral-500 hover:text-black font-mono text-xs px-1 cursor-pointer font-bold"
+                            className="w-5 h-5 flex items-center justify-center text-neutral-500 hover:text-black hover:bg-neutral-200/70 rounded-full font-mono text-sm cursor-pointer font-bold transition-colors"
                             title="Increase stock"
                           >
                             +
@@ -1316,20 +1409,24 @@ export default function AdminProductsPage() {
                           type="button"
                           onClick={() => handleToggleActive(p)}
                           className="flex items-center gap-2 cursor-pointer group"
-                          title="Toggle Visibility"
+                          title="Click to toggle store visibility"
                         >
                           <span
-                            className={`w-8 h-4.5 rounded-full transition-colors relative flex items-center p-0.5 ${
+                            className={`w-9 h-5 rounded-full transition-colors relative flex items-center p-0.5 ${
                               p.isActive !== false ? "bg-emerald-500" : "bg-neutral-300"
                             }`}
                           >
                             <span
-                              className={`w-3.5 h-3.5 rounded-full bg-white transition-transform shadow-2xs ${
-                                p.isActive !== false ? "translate-x-3.5" : "translate-x-0"
+                              className={`w-4 h-4 rounded-full bg-white transition-transform shadow-xs ${
+                                p.isActive !== false ? "translate-x-4" : "translate-x-0"
                               }`}
                             />
                           </span>
-                          <span className="text-xs font-medium text-neutral-700">
+                          <span
+                            className={`text-xs font-semibold ${
+                              p.isActive !== false ? "text-neutral-900" : "text-neutral-400"
+                            }`}
+                          >
                             {p.isActive !== false ? "Published" : "Hidden"}
                           </span>
                         </button>
@@ -1373,9 +1470,29 @@ export default function AdminProductsPage() {
 
           {/* Pagination Footer */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-neutral-100 text-xs">
-            <span className="text-neutral-500 font-medium">
-              Showing {filteredProducts.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} – {Math.min(currentPage * pageSize, filteredProducts.length)} of {filteredProducts.length} products
-            </span>
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-neutral-500 font-medium">
+                Showing {filteredProducts.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} –{" "}
+                {Math.min(currentPage * pageSize, filteredProducts.length)} of {filteredProducts.length} products
+              </span>
+              <div className="flex items-center gap-1.5 text-neutral-500 font-medium">
+                <span>Show</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-white border border-neutral-200 rounded-lg px-2 py-0.5 text-xs text-neutral-800 font-bold focus:outline-hidden cursor-pointer shadow-2xs"
+                >
+                  <option value={10}>10</option>
+                  <option value={15}>15</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+                <span>per page</span>
+              </div>
+            </div>
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
