@@ -218,7 +218,7 @@ export default function AdminOrdersPage() {
   const [createDistrict, setCreateDistrict] = useState("Colombo");
   const [selectedCatalogProduct, setSelectedCatalogProduct] = useState("");
   const [createItemName, setCreateItemName] = useState("");
-  const [createItemPrice, setCreateItemPrice] = useState<number>(3400);
+  const [createItemPrice, setCreateItemPrice] = useState<number>(0);
   const [createQuantity, setCreateQuantity] = useState<number>(1);
   const [createShippingFee, setCreateShippingFee] = useState<number>(450);
   const [createPaymentMethod, setCreatePaymentMethod] = useState("cod");
@@ -482,6 +482,14 @@ export default function AdminOrdersPage() {
       toast.error("Delivery address is required");
       return;
     }
+    if (!createItemName.trim()) {
+      toast.error("Please choose a product or enter an item name");
+      return;
+    }
+    if (createItemPrice <= 0) {
+      toast.error("Please enter a valid unit price");
+      return;
+    }
 
     setIsCreatingOrder(true);
     const toastId = toast.loading("Creating new customer order...");
@@ -538,8 +546,9 @@ export default function AdminOrdersPage() {
         setCreateCustomerPhone("");
         setCreateCustomerEmail("");
         setCreateAddress("");
+        setSelectedCatalogProduct("");
         setCreateItemName("");
-        setCreateItemPrice(3400);
+        setCreateItemPrice(0);
         setCreateQuantity(1);
         loadData();
       } else {
@@ -585,11 +594,9 @@ export default function AdminOrdersPage() {
             <button
               type="button"
               onClick={() => {
-                if (products.length > 0) {
-                  setSelectedCatalogProduct(products[0].name);
-                  setCreateItemName(products[0].name);
-                  setCreateItemPrice(products[0].price);
-                }
+                setSelectedCatalogProduct("");
+                setCreateItemName("");
+                setCreateItemPrice(0);
                 setIsCreateOpen(true);
               }}
               className="bg-neutral-900 hover:bg-neutral-800 text-white px-5 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
@@ -1426,14 +1433,20 @@ export default function AdminOrdersPage() {
                     <select
                       value={selectedCatalogProduct}
                       onChange={(e) => {
-                        setSelectedCatalogProduct(e.target.value);
-                        const prod = products.find((p) => p.name === e.target.value);
-                        if (prod) {
-                          setCreateItemName(prod.name);
-                          setCreateItemPrice(prod.price);
+                        const val = e.target.value;
+                        setSelectedCatalogProduct(val);
+                        if (!val) {
+                          setCreateItemName("");
+                          setCreateItemPrice(0);
+                        } else {
+                          const prod = products.find((p) => p.name === val);
+                          if (prod) {
+                            setCreateItemName(prod.name);
+                            setCreateItemPrice(prod.price);
+                          }
                         }
                       }}
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium mb-2"
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium mb-2 cursor-pointer"
                     >
                       <option value="">-- Choose from available products --</option>
                       {products.map((p) => (
@@ -1447,8 +1460,13 @@ export default function AdminOrdersPage() {
                     type="text"
                     required
                     value={createItemName}
-                    onChange={(e) => setCreateItemName(e.target.value)}
-                    placeholder="e.g. Waves Poncho Ash - Flower"
+                    onChange={(e) => {
+                      setCreateItemName(e.target.value);
+                      if (selectedCatalogProduct && e.target.value !== selectedCatalogProduct) {
+                        setSelectedCatalogProduct("");
+                      }
+                    }}
+                    placeholder="Item name (select from dropdown above or enter custom)"
                     className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
                   />
                 </div>
@@ -1463,8 +1481,9 @@ export default function AdminOrdersPage() {
                       type="number"
                       required
                       min={1}
-                      value={createItemPrice}
-                      onChange={(e) => setCreateItemPrice(Number(e.target.value))}
+                      value={createItemPrice === 0 ? "" : createItemPrice}
+                      onChange={(e) => setCreateItemPrice(Number(e.target.value) || 0)}
+                      placeholder="e.g. 2950"
                       className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-bold font-mono"
                     />
                   </div>
