@@ -70,7 +70,7 @@ export default function AdminInventoryPage() {
   // Selection & Pagination
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 5;
+  const pageSize = 15;
 
   // Custom Quick Adjust Modal State
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);

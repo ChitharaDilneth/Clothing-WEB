@@ -116,7 +116,7 @@ export default function AdminCustomOrdersPage() {
   // Selection & Pagination
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 5;
+  const pageSize = 15;
 
   // Selected Order for Details / Status Modal
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);

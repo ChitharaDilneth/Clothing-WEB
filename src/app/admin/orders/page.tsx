@@ -165,10 +165,10 @@ export default function AdminOrdersPage() {
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
 
-  // Selection & Pagination
+  // Selection & Pagination (Default 15 orders per page)
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 5;
+  const [pageSize, setPageSize] = useState(15);
 
   // Selected Order for Status Update Modal
   const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null);
@@ -1036,10 +1036,29 @@ export default function AdminOrdersPage() {
 
             {/* Pagination Footer */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-neutral-100 text-xs">
-              <span className="text-neutral-500 font-medium">
-                Showing {filteredOrders.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} –{" "}
-                {Math.min(currentPage * pageSize, filteredOrders.length)} of {filteredOrders.length} orders
-              </span>
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-neutral-500 font-medium">
+                  Showing {filteredOrders.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} –{" "}
+                  {Math.min(currentPage * pageSize, filteredOrders.length)} of {filteredOrders.length} orders
+                </span>
+                <div className="flex items-center gap-1.5 text-neutral-500 font-medium">
+                  <span>Show</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="bg-white border border-neutral-200 rounded-lg px-2 py-0.5 text-xs text-neutral-800 font-bold focus:outline-hidden cursor-pointer shadow-2xs"
+                  >
+                    <option value={10}>10</option>
+                    <option value={15}>15</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <span>per page</span>
+                </div>
+              </div>
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
