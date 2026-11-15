@@ -59,8 +59,9 @@ const getAvatarColor = (name?: string) => {
 
 // Date and time formatter
 const formatOrderDate = (dateVal?: string | Date) => {
-  if (!dateVal) return { date: "11/14/2026", time: "03:21 PM" };
+  if (!dateVal) return { date: "11/15/2026", time: "09:31 AM" };
   const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return { date: "11/15/2026", time: "09:31 AM" };
   const dateStr = d.toLocaleDateString("en-US", {
     month: "2-digit",
     day: "2-digit",
@@ -72,6 +73,38 @@ const formatOrderDate = (dateVal?: string | Date) => {
     hour12: true,
   });
   return { date: dateStr, time: timeStr };
+};
+
+// Date range matching helper (proper calendar boundaries in local time)
+const matchesDateFilter = (createdAt: string | Date | undefined, range: string) => {
+  if (range === "all") return true;
+  if (!createdAt) return false;
+  const orderDate = new Date(createdAt);
+  if (isNaN(orderDate.getTime())) return false;
+
+  const now = new Date();
+  // Today boundaries: 00:00:00.000 to 23:59:59.999 local time
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+  if (range === "today") {
+    return orderDate >= startOfToday && orderDate <= endOfToday;
+  }
+
+  if (range === "week") {
+    // Last 7 days: starting 6 days before today at 00:00:00 through end of today
+    const startOf7Days = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6, 0, 0, 0, 0);
+    return orderDate >= startOf7Days && orderDate <= endOfToday;
+  }
+
+  if (range === "month") {
+    // This month: 1st of current month 00:00:00 through end of current month
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    return orderDate >= startOfMonth && orderDate <= endOfMonth;
+  }
+
+  return true;
 };
 
 // Fulfillment status badge styling
@@ -221,19 +254,8 @@ export default function AdminOrdersPage() {
         paymentStatusFilter === "all" ||
         (o.paymentStatus || "").toLowerCase() === paymentStatusFilter.toLowerCase();
 
-      // 5. Date Range filter
-      let matchesDate = true;
-      if (dateRange !== "all") {
-        const orderTime = new Date(o.createdAt || Date.now()).getTime();
-        const now = Date.now();
-        if (dateRange === "today") {
-          matchesDate = now - orderTime <= 24 * 60 * 60 * 1000;
-        } else if (dateRange === "week") {
-          matchesDate = now - orderTime <= 7 * 24 * 60 * 60 * 1000;
-        } else if (dateRange === "month") {
-          matchesDate = now - orderTime <= 30 * 24 * 60 * 60 * 1000;
-        }
-      }
+      // 5. Date Range filter (Today, Last 7 Days, This Month)
+      const matchesDate = matchesDateFilter(o.createdAt, dateRange);
 
       return (
         matchesSearch &&
@@ -245,17 +267,22 @@ export default function AdminOrdersPage() {
     });
   }, [orders, search, fulfillmentFilter, paymentMethodFilter, paymentStatusFilter, dateRange]);
 
-  // Stats calculation
-  const totalOrders = orders.length;
-  const totalItems = orders.reduce(
+  // Orders matching active date range (for KPI bento stat cards)
+  const dateFilteredOrders = useMemo(() => {
+    return orders.filter((o) => matchesDateFilter(o.createdAt, dateRange));
+  }, [orders, dateRange]);
+
+  // Stats calculation based on active date range
+  const totalOrders = dateFilteredOrders.length;
+  const totalItems = dateFilteredOrders.reduce(
     (sum, o) =>
       sum +
       (o.items?.reduce((s, i) => s + (i.quantity || 1), 0) || o.items?.length || 0),
     0
   );
-  const totalAmount = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-  const processingCount = orders.filter((o) => o.orderStatus === "processing").length;
-  const completedCount = orders.filter(
+  const totalAmount = dateFilteredOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const processingCount = dateFilteredOrders.filter((o) => o.orderStatus === "processing").length;
+  const completedCount = dateFilteredOrders.filter(
     (o) => o.orderStatus === "delivered" || o.orderStatus === "confirmed"
   ).length;
 

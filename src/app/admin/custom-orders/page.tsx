@@ -165,14 +165,28 @@ export default function AdminCustomOrdersPage() {
 
       let matchesDate = true;
       if (dateRange !== "all") {
-        const orderTime = new Date(o.createdAt || Date.now()).getTime();
-        const now = Date.now();
-        if (dateRange === "today") {
-          matchesDate = now - orderTime <= 24 * 60 * 60 * 1000;
-        } else if (dateRange === "week") {
-          matchesDate = now - orderTime <= 7 * 24 * 60 * 60 * 1000;
-        } else if (dateRange === "month") {
-          matchesDate = now - orderTime <= 30 * 24 * 60 * 60 * 1000;
+        if (!o.createdAt) {
+          matchesDate = false;
+        } else {
+          const orderDate = new Date(o.createdAt);
+          if (isNaN(orderDate.getTime())) {
+            matchesDate = false;
+          } else {
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+            const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+            if (dateRange === "today") {
+              matchesDate = orderDate >= startOfToday && orderDate <= endOfToday;
+            } else if (dateRange === "week") {
+              const startOf7Days = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6, 0, 0, 0, 0);
+              matchesDate = orderDate >= startOf7Days && orderDate <= endOfToday;
+            } else if (dateRange === "month") {
+              const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+              const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+              matchesDate = orderDate >= startOfMonth && orderDate <= endOfMonth;
+            }
+          }
         }
       }
 

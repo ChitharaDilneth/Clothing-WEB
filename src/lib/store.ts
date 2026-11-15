@@ -87,7 +87,7 @@ let memoryOrders: IOrder[] = [
     paymentStatus: "pending",
     orderStatus: "processing",
     trackingNumber: "PRONET-902148",
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(), // Today (~2 hrs ago)
   },
   {
     _id: "ord_1002",
@@ -132,7 +132,266 @@ let memoryOrders: IOrder[] = [
     paymentStatus: "paid",
     orderStatus: "confirmed",
     trackingNumber: "PRONET-902159",
-    createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+    createdAt: new Date(Date.now() - 3600000 * 5).toISOString(), // Today (~5 hrs ago)
+  },
+  {
+    _id: "ord_1003",
+    orderNumber: "TBH-90216",
+    customer: {
+      name: "Dilshan Fernando",
+      email: "dilshan.f@example.com",
+      phone: "+94765432109",
+    },
+    shippingAddress: {
+      street: "88 Peradeniya Road",
+      city: "Kandy",
+      district: "Kandy",
+      postalCode: "20000",
+    },
+    items: [
+      {
+        productId: "waves-black-mens-sandal",
+        name: "Waves Black Men's Sandal",
+        sku: "WAVES-203",
+        price: 4750,
+        quantity: 1,
+        image: "https://images.unsplash.com/photo-1603808033192-082d6919d3e1?auto=format&fit=crop&w=800&q=80",
+        selectedSize: "42",
+      },
+    ],
+    subtotal: 4750,
+    discount: 0,
+    shippingFee: 450,
+    total: 5200,
+    paymentMethod: "koko",
+    paymentStatus: "paid",
+    orderStatus: "shipped",
+    trackingNumber: "PRONET-902165",
+    createdAt: new Date(Date.now() - 86400000 * 1.2).toISOString(), // Yesterday (1.2 days ago)
+  },
+  {
+    _id: "ord_1004",
+    orderNumber: "TBH-90217",
+    customer: {
+      name: "Tharushi Alwis",
+      email: "tharushi.a@example.com",
+      phone: "+94723456789",
+    },
+    shippingAddress: {
+      street: "24 Beach Road",
+      city: "Mount Lavinia",
+      district: "Colombo",
+      postalCode: "10370",
+    },
+    items: [
+      {
+        productId: "breakwater-linen-shirt",
+        name: "Breakwater Coastal Linen Shirt",
+        sku: "BW-LSH-01",
+        price: 5200,
+        quantity: 1,
+        image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=800&q=80",
+        selectedColor: "Sky Blue",
+        selectedSize: "M",
+      },
+      {
+        productId: "waves-womens-side-bags",
+        name: "Waves Women's Side Bags",
+        sku: "WAVES-WB-002",
+        price: 3300,
+        quantity: 1,
+        image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80",
+        selectedColor: "Coral Red",
+      },
+    ],
+    subtotal: 8500,
+    discount: 0,
+    shippingFee: 450,
+    total: 8950,
+    paymentMethod: "card",
+    paymentStatus: "paid",
+    orderStatus: "processing",
+    trackingNumber: "PRONET-902172",
+    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(), // 3 days ago (Last 7 Days)
+  },
+  {
+    _id: "ord_1005",
+    orderNumber: "TBH-90218",
+    customer: {
+      name: "Malith Bandara",
+      email: "malith.b@example.com",
+      phone: "+94781122334",
+    },
+    shippingAddress: {
+      street: "17 Kurunegala Road",
+      city: "Kurunegala",
+      district: "Kurunegala",
+      postalCode: "60000",
+    },
+    items: [
+      {
+        productId: "waves-two-colour-mens-sandal",
+        name: "Waves Two-Colour Men's Sandal",
+        sku: "WAVES-201",
+        price: 3700,
+        quantity: 1,
+        image: "https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&w=800&q=80",
+        selectedSize: "41",
+      },
+    ],
+    subtotal: 3700,
+    discount: 0,
+    shippingFee: 450,
+    total: 4150,
+    paymentMethod: "cod",
+    paymentStatus: "pending",
+    orderStatus: "confirmed",
+    trackingNumber: "PRONET-902183",
+    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(), // 5 days ago (Last 7 Days)
+  },
+  {
+    _id: "ord_1006",
+    orderNumber: "TBH-90219",
+    customer: {
+      name: "Anuki Senanayake",
+      email: "anuki.s@example.com",
+      phone: "+94778899001",
+    },
+    shippingAddress: {
+      street: "5 Flower Road",
+      city: "Colombo 07",
+      district: "Colombo",
+      postalCode: "00700",
+    },
+    items: [
+      {
+        productId: "ansel-nb1014",
+        name: "Ansel – NB1014",
+        sku: "NB1014",
+        price: 3199,
+        quantity: 2,
+        image: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=800&q=80",
+      },
+      {
+        productId: "breakwater-beach-tote",
+        name: "Breakwater Striped Beach Tote",
+        sku: "BW-TOT-03",
+        price: 5552,
+        quantity: 1,
+        image: "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80",
+      },
+    ],
+    subtotal: 11950,
+    discount: 0,
+    shippingFee: 450,
+    total: 12400,
+    paymentMethod: "card",
+    paymentStatus: "paid",
+    orderStatus: "delivered",
+    trackingNumber: "PRONET-902194",
+    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(), // 10 days ago (This Month, but not Last 7 Days)
+  },
+  {
+    _id: "ord_1007",
+    orderNumber: "TBH-90220",
+    customer: {
+      name: "Chathura Silva",
+      email: "chathura.s@example.com",
+      phone: "+94752233445",
+    },
+    shippingAddress: {
+      street: "63 Main Street",
+      city: "Galle",
+      district: "Galle",
+      postalCode: "80000",
+    },
+    items: [
+      {
+        productId: "waves-black-mens-sandal",
+        name: "Waves Black Men's Sandal",
+        sku: "WAVES-203",
+        price: 7350,
+        quantity: 1,
+        image: "https://images.unsplash.com/photo-1603808033192-082d6919d3e1?auto=format&fit=crop&w=800&q=80",
+      },
+    ],
+    subtotal: 7350,
+    discount: 0,
+    shippingFee: 450,
+    total: 7800,
+    paymentMethod: "mintpay",
+    paymentStatus: "paid",
+    orderStatus: "delivered",
+    trackingNumber: "PRONET-902201",
+    createdAt: new Date(Date.now() - 86400000 * 14).toISOString(), // 14 days ago (This Month)
+  },
+  {
+    _id: "ord_1008",
+    orderNumber: "TBH-90221",
+    customer: {
+      name: "Kavindi Jayasuriya",
+      email: "kavindi.j@example.com",
+      phone: "+94713344556",
+    },
+    shippingAddress: {
+      street: "90 Circular Road",
+      city: "Battaramulla",
+      district: "Colombo",
+      postalCode: "10120",
+    },
+    items: [
+      {
+        productId: "waves-poncho-ash-flower",
+        name: "Waves Poncho Ash – Flower",
+        sku: "H070002051",
+        price: 14750,
+        quantity: 5,
+        image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=900&q=80",
+      },
+    ],
+    subtotal: 14750,
+    discount: 0,
+    shippingFee: 450,
+    total: 15200,
+    paymentMethod: "card",
+    paymentStatus: "paid",
+    orderStatus: "delivered",
+    trackingNumber: "PRONET-902218",
+    createdAt: new Date(Date.now() - 86400000 * 35).toISOString(), // 35 days ago (Last Month)
+  },
+  {
+    _id: "ord_1009",
+    orderNumber: "TBH-90222",
+    customer: {
+      name: "Ruchira Perera",
+      email: "ruchira.p@example.com",
+      phone: "+94770011223",
+    },
+    shippingAddress: {
+      street: "14 Ward Place",
+      city: "Colombo 07",
+      district: "Colombo",
+      postalCode: "00700",
+    },
+    items: [
+      {
+        productId: "ansel-nb1014",
+        name: "Ansel – NB1014",
+        sku: "NB1014",
+        price: 3450,
+        quantity: 1,
+        image: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=800&q=80",
+      },
+    ],
+    subtotal: 3450,
+    discount: 0,
+    shippingFee: 450,
+    total: 3900,
+    paymentMethod: "cod",
+    paymentStatus: "failed",
+    orderStatus: "cancelled",
+    trackingNumber: "PRONET-902229",
+    createdAt: new Date(Date.now() - 86400000 * 45).toISOString(), // 45 days ago (Older)
   },
 ];
 
@@ -639,6 +898,30 @@ export async function getOrders(): Promise<IOrder[]> {
         .sort({ createdAt: -1 })
         .lean();
       if (raw.length > 0) {
+        // If DB has fewer than 5 orders, seed the rest so all date ranges have realistic orders
+        if (raw.length < 5) {
+          const existingNums = new Set(raw.map((r: any) => r.orderNumber));
+          const missing = memoryOrders.filter((m) => !existingNums.has(m.orderNumber));
+          if (missing.length > 0) {
+            try {
+              await OrderModel.insertMany(missing);
+              const refreshed = await OrderModel.find({
+                orderNumber: { $exists: true, $regex: /^TBH/ },
+              })
+                .sort({ createdAt: -1 })
+                .lean();
+              return toPlain(refreshed).map((o: any) => ({
+                ...o,
+                _id: String(o._id),
+                customer: o.customer || { name: "Customer", email: "", phone: "" },
+                items: o.items || [],
+                total: typeof o.total === "number" ? o.total : 0,
+                orderStatus: o.orderStatus || "processing",
+                paymentMethod: o.paymentMethod || "cod",
+              })) as IOrder[];
+            } catch {}
+          }
+        }
         return toPlain(raw).map((o: any) => ({
           ...o,
           _id: String(o._id),
@@ -648,6 +931,20 @@ export async function getOrders(): Promise<IOrder[]> {
           orderStatus: o.orderStatus || "processing",
           paymentMethod: o.paymentMethod || "cod",
         })) as IOrder[];
+      } else {
+        // Seed initial orders into MongoDB
+        try {
+          await OrderModel.insertMany(memoryOrders);
+          const initial = await OrderModel.find({
+            orderNumber: { $exists: true, $regex: /^TBH/ },
+          })
+            .sort({ createdAt: -1 })
+            .lean();
+          return toPlain(initial).map((o: any) => ({
+            ...o,
+            _id: String(o._id),
+          })) as IOrder[];
+        } catch {}
       }
     } catch (e) {
       console.error("Error fetching orders from MongoDB:", e);
