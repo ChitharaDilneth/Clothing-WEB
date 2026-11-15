@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   Search,
   ShoppingBag,
@@ -180,8 +181,32 @@ export default function AdminOrdersPage() {
   // View Details Modal State
   const [viewDetailsOrder, setViewDetailsOrder] = useState<IOrder | null>(null);
 
-  // Quick Action Menu Popover per order
-  const [openMenuOrderNumber, setOpenMenuOrderNumber] = useState<string | null>(null);
+  // Quick Action Menu Popover per order (Portaled outside card to prevent scrollbars)
+  const [mounted, setMounted] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<{
+    order: IOrder;
+    top: number;
+    left: number;
+    openUpward: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Dismiss dropdown menu on click outside, scroll, or resize
+  useEffect(() => {
+    if (!activeMenu) return;
+    const handleDismiss = () => setActiveMenu(null);
+    window.addEventListener("click", handleDismiss);
+    window.addEventListener("scroll", handleDismiss, true);
+    window.addEventListener("resize", handleDismiss);
+    return () => {
+      window.removeEventListener("click", handleDismiss);
+      window.removeEventListener("scroll", handleDismiss, true);
+      window.removeEventListener("resize", handleDismiss);
+    };
+  }, [activeMenu]);
 
   // Comprehensive Create Order Modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -323,7 +348,7 @@ export default function AdminOrdersPage() {
     setNewPaymentStatus(ord.paymentStatus || "pending");
     setTrackingNumber(ord.trackingNumber || "");
     setInternalNotes(ord.internalNotes || "");
-    setOpenMenuOrderNumber(null);
+    setActiveMenu(null);
   };
 
   // Update Status
@@ -364,7 +389,7 @@ export default function AdminOrdersPage() {
     orderNumber: string,
     statusUpdates: { status?: OrderStatus; paymentStatus?: PaymentStatus }
   ) => {
-    setOpenMenuOrderNumber(null);
+    setActiveMenu(null);
     const toastId = toast.loading(`Updating ${orderNumber}...`);
     try {
       const res = await fetch(`/api/orders/${orderNumber}`, {
@@ -385,7 +410,7 @@ export default function AdminOrdersPage() {
 
   // Delete Order
   const handleDeleteOrder = async (orderNumber: string) => {
-    setOpenMenuOrderNumber(null);
+    setActiveMenu(null);
     if (!confirm(`Are you sure you want to permanently delete order #${orderNumber}?`)) {
       return;
     }
@@ -848,7 +873,7 @@ export default function AdminOrdersPage() {
                       .map((i) => i.name)
                       .filter(Boolean)
                       .join(", ") || "Waves Lifestyle Item";
-                    const isMenuOpen = openMenuOrderNumber === o.orderNumber;
+                    const isMenuOpen = activeMenu?.order.orderNumber === o.orderNumber;
 
                     return (
                       <tr
@@ -972,89 +997,34 @@ export default function AdminOrdersPage() {
                             </button>
 
                             {/* More Options (...) Button */}
-                            <div className="relative">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOpenMenuOrderNumber(
-                                    isMenuOpen ? null : o.orderNumber
-                                  );
-                                }}
-                                className="p-1.5 text-neutral-400 hover:text-black rounded-lg transition-colors cursor-pointer"
-                                title="More Actions"
-                              >
-                                <MoreVertical className="w-4 h-4" />
-                              </button>
-
-                              {/* Dropdown Action Menu */}
-                              {isMenuOpen && (
-                                <div className="absolute right-0 top-8 z-30 w-44 bg-white border border-neutral-200 rounded-2xl shadow-xl p-1.5 text-left text-xs font-medium animate-in fade-in zoom-in-95 duration-150">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setViewDetailsOrder(o);
-                                      setOpenMenuOrderNumber(null);
-                                    }}
-                                    className="w-full px-3 py-2 text-neutral-700 hover:bg-neutral-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
-                                  >
-                                    <Eye className="w-3.5 h-3.5 text-neutral-500" />
-                                    <span>View Details</span>
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleQuickStatusUpdate(o.orderNumber, {
-                                        status: "delivered",
-                                        paymentStatus: "paid",
-                                      })
-                                    }
-                                    className="w-full px-3 py-2 text-neutral-700 hover:bg-neutral-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
-                                  >
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span>Mark Delivered</span>
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleQuickStatusUpdate(o.orderNumber, {
-                                        status: "shipped",
-                                      })
-                                    }
-                                    className="w-full px-3 py-2 text-neutral-700 hover:bg-neutral-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
-                                  >
-                                    <Truck className="w-3.5 h-3.5 text-indigo-600" />
-                                    <span>Mark Shipped</span>
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleQuickStatusUpdate(o.orderNumber, {
-                                        paymentStatus: "paid",
-                                      })
-                                    }
-                                    className="w-full px-3 py-2 text-neutral-700 hover:bg-neutral-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
-                                  >
-                                    <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span>Mark Paid</span>
-                                  </button>
-
-                                  <div className="my-1 border-t border-neutral-100" />
-
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteOrder(o.orderNumber)}
-                                    className="w-full px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                                    <span>Delete Order</span>
-                                  </button>
-                                </div>
-                              )}
-                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (isMenuOpen) {
+                                  setActiveMenu(null);
+                                } else {
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  const menuHeight = 220;
+                                  const spaceBelow = window.innerHeight - rect.bottom;
+                                  const openUpward = spaceBelow < menuHeight;
+                                  setActiveMenu({
+                                    order: o,
+                                    top: openUpward ? rect.top - 6 : rect.bottom + 6,
+                                    left: Math.max(12, rect.right - 180),
+                                    openUpward,
+                                  });
+                                }
+                              }}
+                              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                isMenuOpen
+                                  ? "bg-neutral-100 text-black"
+                                  : "text-neutral-400 hover:text-black hover:bg-neutral-50"
+                              }`}
+                              title="More Actions"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -1571,6 +1541,92 @@ export default function AdminOrdersPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* 3-Dot Dropdown Action Menu (Portaled outside card & table to avoid any scrollbar clipping) */}
+      {mounted && activeMenu && createPortal(
+        <div
+          style={{
+            position: "fixed",
+            top: activeMenu.openUpward ? undefined : `${activeMenu.top}px`,
+            bottom: activeMenu.openUpward ? `${window.innerHeight - activeMenu.top}px` : undefined,
+            left: `${activeMenu.left}px`,
+            zIndex: 99999,
+          }}
+          onClick={(e) => e.stopPropagation()}
+          className="w-44 bg-white border border-neutral-200/90 rounded-2xl shadow-2xl p-1.5 text-left text-xs font-medium animate-in fade-in zoom-in-95 duration-150"
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setViewDetailsOrder(activeMenu.order);
+              setActiveMenu(null);
+            }}
+            className="w-full px-3 py-2 text-neutral-700 hover:bg-neutral-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
+          >
+            <Eye className="w-3.5 h-3.5 text-neutral-500" />
+            <span>View Details</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              handleQuickStatusUpdate(activeMenu.order.orderNumber, {
+                status: "delivered",
+                paymentStatus: "paid",
+              });
+              setActiveMenu(null);
+            }}
+            className="w-full px-3 py-2 text-neutral-700 hover:bg-neutral-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Mark Delivered</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              handleQuickStatusUpdate(activeMenu.order.orderNumber, {
+                status: "shipped",
+              });
+              setActiveMenu(null);
+            }}
+            className="w-full px-3 py-2 text-neutral-700 hover:bg-neutral-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
+          >
+            <Truck className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Mark Shipped</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              handleQuickStatusUpdate(activeMenu.order.orderNumber, {
+                paymentStatus: "paid",
+              });
+              setActiveMenu(null);
+            }}
+            className="w-full px-3 py-2 text-neutral-700 hover:bg-neutral-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
+          >
+            <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Mark Paid</span>
+          </button>
+
+          <div className="my-1 border-t border-neutral-100" />
+
+          <button
+            type="button"
+            onClick={() => {
+              const num = activeMenu.order.orderNumber;
+              setActiveMenu(null);
+              handleDeleteOrder(num);
+            }}
+            className="w-full px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+            <span>Delete Order</span>
+          </button>
+        </div>,
+        document.body
       )}
     </div>
   );
