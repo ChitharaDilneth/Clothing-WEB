@@ -1103,104 +1103,110 @@ export default function AdminOrdersPage() {
       {/* ================= MODAL: UPDATE ORDER STATUS ================= */}
       {selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white border border-neutral-200 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl text-neutral-900 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
-              <div>
-                <h3 className="text-base font-black uppercase tracking-wider text-neutral-900">
-                  Update Order #{selectedOrder.orderNumber}
-                </h3>
-                <span className="text-[11px] text-neutral-500">
-                  Customer: {selectedOrder.customer?.name || "Customer"} (
-                  {selectedOrder.customer?.phone || "N/A"})
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedOrder(null)}
-                className="text-neutral-400 hover:text-black cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleUpdateStatus} className="mt-5 space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Fulfillment Status */}
+          <div className="bg-white border border-neutral-200 rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl text-neutral-900 animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+            <form onSubmit={handleUpdateStatus} className="flex flex-col min-h-0 flex-1">
+              {/* Fixed Header */}
+              <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-neutral-100 shrink-0 bg-white">
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">
-                    Fulfillment Status
-                  </label>
-                  <select
-                    value={newStatus}
-                    onChange={(e) => setNewStatus(e.target.value as OrderStatus)}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-bold focus:outline-hidden focus:border-black cursor-pointer"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="processing">Processing</option>
-                    <option value="shipped">Shipped</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="cancelled">Cancelled</option>
-                    <option value="returned">Returned</option>
-                    <option value="refunded">Refunded</option>
-                  </select>
+                  <h3 className="text-base font-black uppercase tracking-wider text-neutral-900">
+                    Update Order #{selectedOrder.orderNumber}
+                  </h3>
+                  <span className="text-[11px] text-neutral-500 block mt-0.5 font-medium">
+                    Customer: {selectedOrder.customer?.name || "Customer"} (
+                    {selectedOrder.customer?.phone || "N/A"})
+                  </span>
                 </div>
-
-                {/* Payment Status */}
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">
-                    Payment Status
-                  </label>
-                  <select
-                    value={newPaymentStatus}
-                    onChange={(e) => setNewPaymentStatus(e.target.value as PaymentStatus)}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-bold focus:outline-hidden focus:border-black cursor-pointer"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="paid">Paid</option>
-                    <option value="failed">Failed</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="font-bold text-neutral-700 block mb-1">
-                  Courier Tracking / Waybill Number
-                </label>
-                <input
-                  type="text"
-                  value={trackingNumber}
-                  onChange={(e) => setTrackingNumber(e.target.value)}
-                  placeholder="e.g. PRONET-902148"
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-mono font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-neutral-700 block mb-1">
-                  Internal Administrative Notes
-                </label>
-                <textarea
-                  rows={2}
-                  value={internalNotes}
-                  onChange={(e) => setInternalNotes(e.target.value)}
-                  placeholder="e.g. Verified via WhatsApp call, packaging customized items..."
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black resize-none"
-                />
-              </div>
-
-              <div className="pt-4 flex gap-3 border-t border-neutral-100">
                 <button
                   type="button"
                   onClick={() => setSelectedOrder(null)}
-                  className="flex-1 py-3 rounded-2xl border border-neutral-200 text-neutral-700 font-bold uppercase hover:bg-neutral-100 cursor-pointer"
+                  className="text-neutral-400 hover:text-black p-1.5 rounded-lg transition-colors cursor-pointer"
+                  title="Close Modal"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Scrollable Body */}
+              <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-5 space-y-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Fulfillment Status */}
+                  <div>
+                    <label className="font-bold text-neutral-700 block mb-1">
+                      Fulfillment Status
+                    </label>
+                    <select
+                      value={newStatus}
+                      onChange={(e) => setNewStatus(e.target.value as OrderStatus)}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-bold focus:outline-hidden focus:border-black cursor-pointer"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="processing">Processing</option>
+                      <option value="shipped">Shipped</option>
+                      <option value="delivered">Delivered</option>
+                      <option value="cancelled">Cancelled</option>
+                      <option value="returned">Returned</option>
+                      <option value="refunded">Refunded</option>
+                    </select>
+                  </div>
+
+                  {/* Payment Status */}
+                  <div>
+                    <label className="font-bold text-neutral-700 block mb-1">
+                      Payment Status
+                    </label>
+                    <select
+                      value={newPaymentStatus}
+                      onChange={(e) => setNewPaymentStatus(e.target.value as PaymentStatus)}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-bold focus:outline-hidden focus:border-black cursor-pointer"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="paid">Paid</option>
+                      <option value="failed">Failed</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-bold text-neutral-700 block mb-1">
+                    Courier Tracking / Waybill Number
+                  </label>
+                  <input
+                    type="text"
+                    value={trackingNumber}
+                    onChange={(e) => setTrackingNumber(e.target.value)}
+                    placeholder="e.g. PRONET-902148"
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-mono font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-neutral-700 block mb-1">
+                    Internal Administrative Notes
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={internalNotes}
+                    onChange={(e) => setInternalNotes(e.target.value)}
+                    placeholder="e.g. Verified via WhatsApp call, packaging customized items..."
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Fixed Footer */}
+              <div className="px-6 sm:px-8 py-4 border-t border-neutral-100 shrink-0 bg-white flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrder(null)}
+                  className="flex-1 py-3 rounded-2xl border border-neutral-200 text-neutral-700 font-bold uppercase hover:bg-neutral-100 cursor-pointer text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isUpdating}
-                  className="flex-1 py-3 rounded-2xl bg-neutral-900 text-white font-bold uppercase hover:bg-neutral-800 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
+                  className="flex-1 py-3 rounded-2xl bg-neutral-900 text-white font-bold uppercase hover:bg-neutral-800 transition-colors disabled:opacity-50 cursor-pointer shadow-xs text-xs"
                 >
                   {isUpdating ? "Saving..." : "Save Changes"}
                 </button>
@@ -1313,246 +1319,252 @@ export default function AdminOrdersPage() {
       {/* ================= MODAL: CREATE ORDER ================= */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white border border-neutral-200 rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl text-neutral-900 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
-              <div>
-                <h3 className="text-base font-black uppercase tracking-wider text-neutral-900">
-                  Create New Customer Order
-                </h3>
-                <span className="text-[11px] text-neutral-500">
-                  Manually book an offline or direct phone order into the TBH system.
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsCreateOpen(false)}
-                className="text-neutral-400 hover:text-black cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateOrderSubmit} className="mt-5 space-y-3.5 text-xs">
-              {/* Customer Full Name */}
-              <div>
-                <label className="font-bold text-neutral-700 block mb-1">
-                  Customer Full Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={createCustomerName}
-                  onChange={(e) => setCreateCustomerName(e.target.value)}
-                  placeholder="e.g. Kasun Jayawardena"
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
-                />
-              </div>
-
-              {/* Phone & Email */}
-              <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white border border-neutral-200 rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl text-neutral-900 animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+            <form onSubmit={handleCreateOrderSubmit} className="flex flex-col min-h-0 flex-1">
+              {/* 1. FIXED TOP HEADER (Fixed on single screen) */}
+              <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-neutral-100 shrink-0 bg-white">
                 <div>
-                  <label className="font-bold text-neutral-700 block mb-1">
-                    Phone Number *
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={createCustomerPhone}
-                    onChange={(e) => setCreateCustomerPhone(e.target.value)}
-                    placeholder="e.g. +94 77 123 4567"
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
-                  />
+                  <h3 className="text-base font-black uppercase tracking-wider text-neutral-900">
+                    Create New Customer Order
+                  </h3>
+                  <span className="text-[11px] text-neutral-500 block mt-0.5 font-medium">
+                    Manually book an offline or direct phone order into the TBH system.
+                  </span>
                 </div>
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    value={createCustomerEmail}
-                    onChange={(e) => setCreateCustomerEmail(e.target.value)}
-                    placeholder="e.g. kasun@example.com"
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
-                  />
-                </div>
-              </div>
-
-              {/* Delivery Address & City */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="sm:col-span-2">
-                  <label className="font-bold text-neutral-700 block mb-1">
-                    Delivery Street Address *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={createAddress}
-                    onChange={(e) => setCreateAddress(e.target.value)}
-                    placeholder="e.g. No. 45, Galle Road"
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">
-                    City *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={createCity}
-                    onChange={(e) => setCreateCity(e.target.value)}
-                    placeholder="Colombo"
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
-                  />
-                </div>
-              </div>
-
-              {/* Product Catalog Picker / Custom Item */}
-              <div>
-                <label className="font-bold text-neutral-700 block mb-1">
-                  Select Product from Catalog (or enter custom)
-                </label>
-                {products.length > 0 && (
-                  <select
-                    value={selectedCatalogProduct}
-                    onChange={(e) => {
-                      setSelectedCatalogProduct(e.target.value);
-                      const prod = products.find((p) => p.name === e.target.value);
-                      if (prod) {
-                        setCreateItemName(prod.name);
-                        setCreateItemPrice(prod.price);
-                      }
-                    }}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium mb-2"
-                  >
-                    <option value="">-- Choose from available products --</option>
-                    {products.map((p) => (
-                      <option key={p._id || p.sku} value={p.name}>
-                        {p.name} — Rs. {p.price.toLocaleString()} ({p.brand})
-                      </option>
-                    ))}
-                  </select>
-                )}
-                <input
-                  type="text"
-                  required
-                  value={createItemName}
-                  onChange={(e) => setCreateItemName(e.target.value)}
-                  placeholder="e.g. Waves Poncho Ash - Flower"
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
-                />
-              </div>
-
-              {/* Unit Price & Quantity & Shipping Fee */}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">
-                    Unit Price (Rs) *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min={1}
-                    value={createItemPrice}
-                    onChange={(e) => setCreateItemPrice(Number(e.target.value))}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-bold font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">
-                    Quantity *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min={1}
-                    value={createQuantity}
-                    onChange={(e) => setCreateQuantity(Number(e.target.value))}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">
-                    Shipping (Rs)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={createShippingFee}
-                    onChange={(e) => setCreateShippingFee(Number(e.target.value))}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-mono font-medium"
-                  />
-                </div>
-              </div>
-
-              {/* Payment Method & Initial Status */}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">
-                    Payment Method
-                  </label>
-                  <select
-                    value={createPaymentMethod}
-                    onChange={(e) => setCreatePaymentMethod(e.target.value)}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-medium focus:outline-hidden focus:border-black cursor-pointer"
-                  >
-                    <option value="cod">Cash on Delivery (COD)</option>
-                    <option value="card">Online Card</option>
-                    <option value="koko">Koko / Mintpay</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">
-                    Payment Status
-                  </label>
-                  <select
-                    value={createPaymentStatus}
-                    onChange={(e) => setCreatePaymentStatus(e.target.value as PaymentStatus)}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-medium focus:outline-hidden focus:border-black cursor-pointer"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="paid">Paid</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-bold text-neutral-700 block mb-1">
-                    Order Status
-                  </label>
-                  <select
-                    value={createOrderStatus}
-                    onChange={(e) => setCreateOrderStatus(e.target.value as OrderStatus)}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-medium focus:outline-hidden focus:border-black cursor-pointer"
-                  >
-                    <option value="processing">Processing</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="shipped">Shipped</option>
-                    <option value="delivered">Delivered</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Total Summary */}
-              <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 flex items-center justify-between text-xs">
-                <span className="font-bold text-neutral-700">Calculated Total</span>
-                <span className="font-black text-sm text-neutral-900 font-mono">
-                  Rs. {(createItemPrice * createQuantity + createShippingFee).toLocaleString()}
-                </span>
-              </div>
-
-              <div className="pt-4 flex gap-3 border-t border-neutral-100">
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
-                  className="flex-1 py-3 rounded-2xl border border-neutral-200 text-neutral-700 font-bold uppercase hover:bg-neutral-100 cursor-pointer"
+                  className="text-neutral-400 hover:text-black p-1.5 rounded-lg transition-colors cursor-pointer"
+                  title="Close Modal"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* 2. SCROLLABLE MIDDLE FORM CONTENT (Scrollbar only between Header and Footer) */}
+              <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-5 space-y-3.5 text-xs">
+                {/* Customer Full Name */}
+                <div>
+                  <label className="font-bold text-neutral-700 block mb-1">
+                    Customer Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={createCustomerName}
+                    onChange={(e) => setCreateCustomerName(e.target.value)}
+                    placeholder="e.g. Kasun Jayawardena"
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
+                  />
+                </div>
+
+                {/* Phone & Email */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-neutral-700 block mb-1">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={createCustomerPhone}
+                      onChange={(e) => setCreateCustomerPhone(e.target.value)}
+                      placeholder="e.g. +94 77 123 4567"
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-neutral-700 block mb-1">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={createCustomerEmail}
+                      onChange={(e) => setCreateCustomerEmail(e.target.value)}
+                      placeholder="e.g. kasun@example.com"
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
+                    />
+                  </div>
+                </div>
+
+                {/* Delivery Address & City */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="font-bold text-neutral-700 block mb-1">
+                      Delivery Street Address *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={createAddress}
+                      onChange={(e) => setCreateAddress(e.target.value)}
+                      placeholder="e.g. No. 45, Galle Road"
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-neutral-700 block mb-1">
+                      City *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={createCity}
+                      onChange={(e) => setCreateCity(e.target.value)}
+                      placeholder="Colombo"
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
+                    />
+                  </div>
+                </div>
+
+                {/* Product Catalog Picker / Custom Item */}
+                <div>
+                  <label className="font-bold text-neutral-700 block mb-1">
+                    Select Product from Catalog (or enter custom)
+                  </label>
+                  {products.length > 0 && (
+                    <select
+                      value={selectedCatalogProduct}
+                      onChange={(e) => {
+                        setSelectedCatalogProduct(e.target.value);
+                        const prod = products.find((p) => p.name === e.target.value);
+                        if (prod) {
+                          setCreateItemName(prod.name);
+                          setCreateItemPrice(prod.price);
+                        }
+                      }}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium mb-2"
+                    >
+                      <option value="">-- Choose from available products --</option>
+                      {products.map((p) => (
+                        <option key={p._id || p.sku} value={p.name}>
+                          {p.name} — Rs. {p.price.toLocaleString()} ({p.brand})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <input
+                    type="text"
+                    required
+                    value={createItemName}
+                    onChange={(e) => setCreateItemName(e.target.value)}
+                    placeholder="e.g. Waves Poncho Ash - Flower"
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-medium"
+                  />
+                </div>
+
+                {/* Unit Price & Quantity & Shipping Fee */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="font-bold text-neutral-700 block mb-1">
+                      Unit Price (Rs) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min={1}
+                      value={createItemPrice}
+                      onChange={(e) => setCreateItemPrice(Number(e.target.value))}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-bold font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-neutral-700 block mb-1">
+                      Quantity *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min={1}
+                      value={createQuantity}
+                      onChange={(e) => setCreateQuantity(Number(e.target.value))}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-neutral-700 block mb-1">
+                      Shipping (Rs)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={createShippingFee}
+                      onChange={(e) => setCreateShippingFee(Number(e.target.value))}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 focus:outline-hidden focus:border-black font-mono font-medium"
+                    />
+                  </div>
+                </div>
+
+                {/* Payment Method & Initial Status */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="font-bold text-neutral-700 block mb-1">
+                      Payment Method
+                    </label>
+                    <select
+                      value={createPaymentMethod}
+                      onChange={(e) => setCreatePaymentMethod(e.target.value)}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-medium focus:outline-hidden focus:border-black cursor-pointer"
+                    >
+                      <option value="cod">Cash on Delivery (COD)</option>
+                      <option value="card">Online Card</option>
+                      <option value="koko">Koko / Mintpay</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-neutral-700 block mb-1">
+                      Payment Status
+                    </label>
+                    <select
+                      value={createPaymentStatus}
+                      onChange={(e) => setCreatePaymentStatus(e.target.value as PaymentStatus)}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-medium focus:outline-hidden focus:border-black cursor-pointer"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="paid">Paid</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-neutral-700 block mb-1">
+                      Order Status
+                    </label>
+                    <select
+                      value={createOrderStatus}
+                      onChange={(e) => setCreateOrderStatus(e.target.value as OrderStatus)}
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-2.5 text-neutral-900 font-medium focus:outline-hidden focus:border-black cursor-pointer"
+                    >
+                      <option value="processing">Processing</option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="shipped">Shipped</option>
+                      <option value="delivered">Delivered</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Total Summary */}
+                <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 flex items-center justify-between text-xs">
+                  <span className="font-bold text-neutral-700">Calculated Total</span>
+                  <span className="font-black text-sm text-neutral-900 font-mono">
+                    Rs. {(createItemPrice * createQuantity + createShippingFee).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* 3. FIXED BOTTOM FOOTER (Fixed on single screen, always visible) */}
+              <div className="px-6 sm:px-8 py-4 border-t border-neutral-100 shrink-0 bg-white flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(false)}
+                  className="flex-1 py-3 rounded-2xl border border-neutral-200 text-neutral-700 font-bold uppercase hover:bg-neutral-100 cursor-pointer text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isCreatingOrder}
-                  className="flex-1 py-3 rounded-2xl bg-neutral-900 text-white font-bold uppercase hover:bg-neutral-800 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
+                  className="flex-1 py-3 rounded-2xl bg-neutral-900 text-white font-bold uppercase hover:bg-neutral-800 transition-colors disabled:opacity-50 cursor-pointer shadow-xs text-xs"
                 >
                   {isCreatingOrder ? "Creating..." : "Confirm & Create"}
                 </button>
