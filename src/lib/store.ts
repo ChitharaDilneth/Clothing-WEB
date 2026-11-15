@@ -452,7 +452,135 @@ const memoryCustomOrders: CustomOrderRecord[] = [
     customerPhone: "+94778899001",
     price: 4350,
     status: "approved",
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(), // 2 hours ago (Today)
+  },
+  {
+    _id: "co_2",
+    orderNumber: "CUST-WAVES-02",
+    baseProductId: "waves-classic-flip-flop",
+    baseProductName: "Waves Classic Flip-Flop",
+    color: "Black / Grey",
+    size: "41",
+    customText: "ARUGAM BAY '26",
+    textColor: "#ffffff",
+    customerName: "Dilshan Fernando",
+    customerEmail: "dilshan.f@gmail.com",
+    customerPhone: "+94765432109",
+    price: 3850,
+    status: "in_production",
+    createdAt: new Date(Date.now() - 3600000 * 6).toISOString(), // 6 hours ago (Today)
+  },
+  {
+    _id: "co_3",
+    orderNumber: "CUST-WAVES-03",
+    baseProductId: "waves-isle-unisex-slipper",
+    baseProductName: "Waves Isle Unisex Slipper",
+    color: "Olive / Tan",
+    size: "38",
+    customText: "ISLAND VIBES",
+    textColor: "#ffffff",
+    customerName: "Kavindi Jayawardena",
+    customerEmail: "kavindi.j@outlook.com",
+    customerPhone: "+94719876543",
+    price: 4100,
+    status: "pending_review",
+    createdAt: new Date(Date.now() - 86400000 * 1).toISOString(), // 1 day ago (Last 7 Days)
+  },
+  {
+    _id: "co_4",
+    orderNumber: "CUST-WAVES-04",
+    baseProductId: "breakwater-coastal-slides",
+    baseProductName: "Breakwater Coastal Slides",
+    color: "Navy / Blue",
+    size: "43",
+    customText: "SOUTHERN BREEZE",
+    textColor: "#ffffff",
+    customerName: "Malith Bandara",
+    customerEmail: "malith.b@gmail.com",
+    customerPhone: "+94781122334",
+    price: 4650,
+    status: "approved",
+    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(), // 3 days ago (Last 7 Days)
+  },
+  {
+    _id: "co_5",
+    orderNumber: "CUST-WAVES-05",
+    baseProductId: "waves-two-colour-mens-sandal",
+    baseProductName: "Waves Two-Colour Men's Sandal",
+    color: "Burgundy / White",
+    size: "39",
+    customText: "WANDERLUST",
+    textColor: "#ffffff",
+    customerName: "Tharushi Alwis",
+    customerEmail: "tharushi.a@yahoo.com",
+    customerPhone: "+94723456789",
+    price: 4350,
+    status: "rejected",
+    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(), // 5 days ago (Last 7 Days)
+  },
+  {
+    _id: "co_6",
+    orderNumber: "CUST-WAVES-06",
+    baseProductId: "waves-coastline-explorer-sandal",
+    baseProductName: "Waves Coastline Explorer Sandal",
+    color: "Black / Orange",
+    size: "44",
+    customText: "GALLE FORT SUNSET",
+    textColor: "#ffffff",
+    customerName: "Nuwan Pradeep",
+    customerEmail: "nuwan.p@gmail.com",
+    customerPhone: "+94771239876",
+    price: 4950,
+    status: "in_production",
+    createdAt: new Date(Date.now() - 86400000 * 6).toISOString(), // 6 days ago (Last 7 Days)
+  },
+  {
+    _id: "co_7",
+    orderNumber: "CUST-WAVES-07",
+    baseProductId: "waves-classic-flip-flop",
+    baseProductName: "Waves Classic Flip-Flop",
+    color: "Yellow / White",
+    size: "37",
+    customText: "SUN & SALTY AIR",
+    textColor: "#000000",
+    customerName: "Anuki De Silva",
+    customerEmail: "anuki.ds@gmail.com",
+    customerPhone: "+94705544332",
+    price: 3850,
+    status: "pending_review",
+    createdAt: new Date(Date.now() - 86400000 * 12).toISOString(), // 12 days ago (This Month)
+  },
+  {
+    _id: "co_8",
+    orderNumber: "CUST-WAVES-08",
+    baseProductId: "breakwater-coastal-slides",
+    baseProductName: "Breakwater Coastal Slides",
+    color: "Ash / Black",
+    size: "42",
+    customText: "MIRISSA POINT",
+    textColor: "#ffffff",
+    customerName: "Charith Senanayake",
+    customerEmail: "charith.s@gmail.com",
+    customerPhone: "+94774433221",
+    price: 4650,
+    status: "approved",
+    createdAt: new Date(Date.now() - 86400000 * 18).toISOString(), // 18 days ago (This Month)
+  },
+  {
+    _id: "co_9",
+    orderNumber: "CUST-WAVES-09",
+    baseProductId: "waves-isle-unisex-slipper",
+    baseProductName: "Waves Isle Unisex Slipper",
+    color: "Navy / White",
+    size: "40",
+    customText: "TROPICAL LIFE",
+    textColor: "#ffffff",
+    customerName: "Heshani Perera",
+    customerEmail: "heshani.p@gmail.com",
+    customerPhone: "+94759988776",
+    price: 4100,
+    status: "in_production",
+    createdAt: new Date(Date.now() - 86400000 * 35).toISOString(), // 35 days ago (Older)
   },
 ];
 
@@ -1292,6 +1420,22 @@ export async function updateCustomOrderStatus(orderNumber: string, status: strin
   const mem = memoryCustomOrders.find((o) => o.orderNumber === orderNumber);
   if (mem) {
     mem.status = status as any;
+  }
+  return true;
+}
+
+export async function deleteCustomOrder(orderNumber: string): Promise<boolean> {
+  const db = await connectDB();
+  if (db) {
+    try {
+      await CustomOrderModel.findOneAndDelete({ orderNumber });
+    } catch (e) {
+      console.error("Error deleting custom order in MongoDB:", e);
+    }
+  }
+  const idx = memoryCustomOrders.findIndex((o) => o.orderNumber === orderNumber);
+  if (idx !== -1) {
+    memoryCustomOrders.splice(idx, 1);
   }
   return true;
 }
